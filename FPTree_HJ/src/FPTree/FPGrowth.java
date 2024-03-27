@@ -14,7 +14,7 @@ public class FPGrowth {
     public FPNode   fp_root;
     public List<ArrayList<String>> transactions;
     public Map<String, Integer> itemCounts;
-    public Map<String, Integer> frequentItems;
+    public Map<String, Integer> freqItems;
 
     // Constructor
     public FPGrowth(String file_name, double threshold){
@@ -24,7 +24,7 @@ public class FPGrowth {
         this.min_sup = 0;
         this.transactions = new ArrayList<ArrayList<String>>();
         this.itemCounts = new HashMap<String, Integer>();
-        this.frequentItems = new HashMap<String, Integer>();
+        this.freqItems = new HashMap<String, Integer>();
     }
 
 
@@ -51,9 +51,9 @@ public class FPGrowth {
     // findFrequentItems
     public void findFrequentItems(){
         // System.out.println(transactions.get(0).getClass());
-        for (ArrayList<String> items : transactions) {
+        for (ArrayList<String> transaction : transactions) {
 
-            for (String item : items) {
+            for (String item : transaction) {
                 if (itemCounts.containsKey(item)) {
                     itemCounts.put(item, itemCounts.get(item) + 1);
                 } else {
@@ -66,13 +66,13 @@ public class FPGrowth {
         for (String key : keySet_itemCounts) {
             int cnt = itemCounts.get(key);
             if(cnt >= min_sup){
-                frequentItems.put(key, cnt);
+                freqItems.put(key, cnt);
             }
         }
 
-        List<String> keySet_frequentItems = new ArrayList<>(frequentItems.keySet());
+        List<String> keySet_frequentItems = new ArrayList<>(freqItems.keySet());
         // https://velog.io/@dev-easy/Java-Map%EC%9D%84-Key-Value%EB%A1%9C-%EC%A0%95%EB%A0%AC%ED%95%98%EA%B8%B0
-        keySet_frequentItems.sort((e1, e2) -> frequentItems.get(e2).compareTo(frequentItems.get(e1)));
+        keySet_frequentItems.sort((e1, e2) -> freqItems.get(e2).compareTo(freqItems.get(e1)));
 //        for (String key : keySet_frequentItems){
 //            System.out.print("Key : " + key);
 //            System.out.println(" | Val : " + frequentItems.get(key));
@@ -87,14 +87,40 @@ public class FPGrowth {
 
     // buildFPTree
     public void buildFPTree(){
-        for (ArrayList<String> items : transactions) {
+        fp_root = new FPNode("null");
+        fp_root.setRoot();
 
-            for (String item : items) {
-                if (itemCounts.containsKey(item)) {
-                    itemCounts.put(item, itemCounts.get(item) + 1);
-                } else {
-                    itemCounts.put(item, 1);
+        for (ArrayList<String> transaction : transactions) {
+            ArrayList<String> freqSortedTransaction = new ArrayList<String>();
+            List<String> keySet_freqItems = new ArrayList<>(freqItems.keySet());
+            for (String item: keySet_freqItems){
+                if (transaction.contains(item)){
+                    freqSortedTransaction.add(item);
                 }
+            }
+            processTransactionFPTree(fp_root, freqSortedTransaction);
+        }
+    }
+
+    // processTransactionFPTree
+    public void processTransactionFPTree(FPNode fp_node, ArrayList<String> freqSortedTransaction){
+        for (String item : freqSortedTransaction){
+            boolean checkChildren = false;
+
+            for (FPNode child: fp_node.children){
+                if (child.name.equals(item)){
+                    child.count++;
+                    checkChildren = true;
+                   break;
+                }
+            }
+
+            if(!checkChildren){
+                FPNode child = new FPNode(item); // child.count is initially set to 1
+                child.parent = fp_node;
+                fp_node.children.add(child);
+
+                // TODO
             }
         }
     }

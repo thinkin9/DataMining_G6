@@ -1,5 +1,6 @@
 package FPTree;
 
+import java.util.ArrayList;
 import java.util.Vector;
 
 public class FPNode {
@@ -13,16 +14,20 @@ public class FPNode {
     String      name;
 
     // Relationship between nodes
-    Vector<FPNode> children;
+    ArrayList<FPNode> children;
     FPNode      parent;
 
     // Constructor
     public FPNode(String str){
         this.isRoot = false;
         this.idx = -1;
-        this.count = 0;
+        this.count = 1;
         this.name = str;
-        this.children = new Vector<FPNode>();
+        this.children = new ArrayList<FPNode>();
         this.parent = null;
+    }
+
+    public void setRoot(){
+        this.isRoot = true;
     }
 }
