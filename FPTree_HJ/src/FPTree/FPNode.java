@@ -16,6 +16,7 @@ public class FPNode {
     // Relationship between nodes
     ArrayList<FPNode> children;
     FPNode      parent;
+    FPNode      next;  // next FPNode @HeaderTable
 
     // Constructor
     public FPNode(String str){
@@ -25,6 +26,7 @@ public class FPNode {
         this.name = str;
         this.children = new ArrayList<FPNode>();
         this.parent = null;
+        this.next = null;
     }
 
     public void setRoot(){
