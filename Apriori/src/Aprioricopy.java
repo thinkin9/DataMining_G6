@@ -121,35 +121,6 @@ public class Aprioricopy {
         }
         return;
     }
-	/*
-	public Set<Set<String>> combineSet(Set<Set<String>> data) {
-        Set<Set<String>> set = new HashSet<>();
-        for(Set<String> i: data) {
-            Set<String> tmp = new HashSet<>(i);
-            for(Set<String> j: data) {
-                Set<String> next_tmp = new HashSet<>(j);
-                next_tmp.removeAll(tmp);
-                if(next_tmp.size() == 1) {
-                    Set<String> input = new HashSet<>(tmp);
-                    input.addAll(next_tmp);
-                    set.add(input);
-                }
-            }
-            if(CalculateSup(i) < minSup){
-                RemoveAll_Include(set, i);
-            }
-        }
-        return set;   
-    }
-
-	public void RemoveAll_Include(Set<Set<String>> data, Set<String> target_data) {
-        Set<Set<String>> tmp = new HashSet<>(data);
-        for(Set<String> i: tmp) {
-            if(i.containsAll(target_data)) data.remove(i);
-        }
-        return;
-    }
-	*/
 
 	public double CalculateSup(Set<String> target) {
 		Integer cnt = 0;

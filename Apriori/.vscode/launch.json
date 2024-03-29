@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "args": ["DataMining_G6/Apriori/src/groceries.csv", "0.005"],
+            "args": ["src/groceries.csv", 0.005],
             "type": "java",
             "name": "Launch Current File",
             "request": "launch",
@@ -16,7 +16,7 @@
             "name": "Launch Aprioricopy",
             "request": "launch",
             "mainClass": "Aprioricopy",
-            "projectName": "Apiriori_af0fc51e"
+            "projectName": "Apriori_1bcc6d41"
         }
     ]
 }
