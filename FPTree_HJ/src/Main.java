@@ -15,8 +15,9 @@ public class Main {
 
         long startTime = System.currentTimeMillis();
         FPGrowth fpGrowth = new FPGrowth(file_name, threshold);
-        fpGrowth.parseTransactions();
-        fpGrowth.findFrequentItems();
+        fpGrowth.buildTransactions();
+        fpGrowth.buildItemCounts();
+        fpGrowth.buildFPTree();
 
         long endTime = System.currentTimeMillis();
         System.out.println("FPTree Processing Execution time: " + (endTime - startTime)/1000.0);
