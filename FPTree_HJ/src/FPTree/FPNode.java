@@ -1,6 +1,7 @@
 package FPTree;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Vector;
 
 public class FPNode {
@@ -31,5 +32,17 @@ public class FPNode {
 
     public void setRoot(){
         this.isRoot = true;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public ArrayList<FPNode> getChildren() {
+        return children;
+    }
+
+    public String getName() {
+        return name;
     }
 }
