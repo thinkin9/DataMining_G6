@@ -7,7 +7,7 @@ import java.util.*;
 public class FPGrowth {
     public String   file_name;
     public File     file;
-    public double   threshold; //# of input/whole trsaction
+    public double   threshold; //# of input/whole transactions
     public double   min_sup;
 
     public FPNode   fp_root;
@@ -221,43 +221,57 @@ public class FPGrowth {
 //        return conditionalPatternBase;
 //    }
 
-
     public List<Pattern> findConditionalPatternBase(String item) {
         List<Pattern> conditionalPatternBase = new ArrayList<>();
         FPNode head = headerTable.get(item);
 
-        if (head == null) {
-            return conditionalPatternBase;
-        }
-
-        while (head != null) {
+        while(head != null){
             List<String> path = new ArrayList<>();
-            FPNode node = head.parent;
+            FPNode parent = head.parent;
 
-            while (node != null && !node.isRoot) {
-                path.add(0, node.name);
-                node = node.parent;
+            while(parent != null && !parent.isRoot) {
+                path.add(0, parent.name);
+                parent = parent.parent;
             }
 
-            for (int i = 0; i < head.count; i++) {
-                addPatternToConditionalPatternBase(conditionalPatternBase, path);
-            }
+            // add cond. pattern base (Slide #57) with head.count 
+            conditionalPatternBase.add(new Pattern(path, head.count));
 
             head = head.next;
         }
 
+        // if (head == null) {
+        //     return conditionalPatternBase;
+        // }
+
+        // while (head != null) {
+        //     List<String> path = new ArrayList<>();
+        //     FPNode node = head.parent;
+
+        //     while (node != null && !node.isRoot) {
+        //         path.add(0, node.name);
+        //         node = node.parent;
+        //     }
+
+        //     for (int i = 0; i < head.count; i++) {
+        //         addPatternToConditionalPatternBase(conditionalPatternBase, path);
+        //     }
+
+        //     head = head.next;
+        // }
+
         return conditionalPatternBase;
     }
 
-    private void addPatternToConditionalPatternBase(List<Pattern> conditionalPatternBase, List<String> items) {
-        for (Pattern pattern : conditionalPatternBase) {
-            if (pattern.getItems().equals(items)) {
-                pattern.incrementSupport();
-                return;
-            }
-        }
-        conditionalPatternBase.add(new Pattern(items, 1));
-    }
+    // private void addPatternToConditionalPatternBase(List<Pattern> conditionalPatternBase, List<String> items) {
+    //     for (Pattern pattern : conditionalPatternBase) {
+    //         if (pattern.getItems().equals(items)) {
+    //             pattern.incrementSupport();
+    //             return;
+    //         }
+    //     }
+    //     conditionalPatternBase.add(new Pattern(items, 1));
+    // }
 
     //get support of each pattern base Map<String, Integer>
     //To avoid Alphabet order sorting in HashMap, used linked hash map.

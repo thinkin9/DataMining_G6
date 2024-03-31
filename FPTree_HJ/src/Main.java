@@ -25,7 +25,7 @@ public class Main {
         double min_sup = fpGrowth.min_sup;
 
         //conditional pattern base check
-        String item = "m";
+        String item = "p";
 //        List<FPNode> conditionalPatternBase = fpGrowth.findConditionalPatternBase(item);
 //        System.out.println("Conditional Pattern Base for item \"" + item + "\":");
 //        for (FPNode patternNode : conditionalPatternBase) {
