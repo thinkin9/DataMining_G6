@@ -1,6 +1,5 @@
 package FPTree;
 
-import java.util.List;
 
 public class ItemCount {
     public String name;

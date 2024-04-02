@@ -33,28 +33,6 @@ public class Main {
 
 
 
-//        //conditional pattern base check
-//        String item = "p";
-//        List<Pattern> conditionalPatternBase = fpGrowth.findConditionalPatternBase(item);
-//
-//        System.out.println("Conditional Pattern Base for item \"" + item + "\":");
-//        for (Pattern pattern : conditionalPatternBase) {
-//            System.out.println(pattern.getItems() + " - Count: " + pattern.getSupport());
-//        }
-//
-//        List<Pattern> conditionalFPTree = fpGrowth.buildConditionalFPTree(conditionalPatternBase, min_sup);
-//
-//        System.out.println("Conditional FP Tree:");
-//        for (Pattern pattern : conditionalFPTree) {
-//            System.out.println(pattern.getItems() + " - Count: " + pattern.getSupport());
-//        }
-//
-//        List<Pattern> subpatterns = FPGrowth.generateSubpatterns(conditionalFPTree, item);
-//
-//        System.out.println("Subpatterns:");
-//        for (Pattern subpattern : subpatterns) {
-//            System.out.println(subpattern.getItems() + " - Count: " + subpattern.getSupport());
-//        }
         Map<List<String>, Integer> subpatternMap = new HashMap<>();
         for (ItemCount item : fpGrowth.freqItems) {
             List<Pattern> conditionalPatternBase = fpGrowth.findConditionalPatternBase(item.getItems());
