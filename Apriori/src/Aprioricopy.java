@@ -1,34 +1,35 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 
 public class Aprioricopy {
 	private Double minSup;
 	private Integer minSupThreshold;
 	private Integer total;
 	private List<Set<String>> dataset;
-	private TreeMap<Double, Set<String>> result;
+	private HashMap<Double, List<Set<String>>> result;
 
 	public Aprioricopy(Double minSup, Integer total, List<Set<String>> dataset) {
 		this.minSup = minSup;
 		this.total = total;
 		this.minSupThreshold = (int) Math.ceil(minSup * total);
 		this.dataset = dataset;
-		this.result = new TreeMap<>();
+		this.result = new HashMap<>();
 	}
 
 	public static void main(String[] args) throws IOException {
 		double minSup = Double.parseDouble(args[1]);
-
+		long startTime = System.currentTimeMillis();
 		List<Set<String>> Groceries = new LinkedList<>();
 		BufferedReader br = new BufferedReader(new FileReader(args[0]));
+
 		String line;
 		int total = 0;
 		while ((line = br.readLine()) != null) {
@@ -43,9 +44,17 @@ public class Aprioricopy {
 		br.close();
 		Aprioricopy a = new Aprioricopy(minSup, total, Groceries);
 		a.run();
-		a.result.forEach((count, item) -> {
-			System.out.println(item + " " + count);
-		});
+		a.result.entrySet().stream()
+				.sorted(Map.Entry.<Double, List<Set<String>>>comparingByKey())
+				.forEach(entry -> {
+					Double support = entry.getKey();
+					List<Set<String>> itemList = entry.getValue();
+					itemList.forEach(item -> {
+						System.out.println(item + " " + support);
+					});
+				});
+		long endTime = System.currentTimeMillis();
+		System.out.println("FPTree Processing Execution time: " + (endTime - startTime) / 1000.0);
 	}
 
 	public void run() {
@@ -56,7 +65,10 @@ public class Aprioricopy {
 			Set<Set<String>> newSet = combineSet(sett);
 			sett = newSet;
 			for (Set<String> item : sett) {
-				this.result.put((double) CalculateSup(item) / this.total, item);
+				double sup = (double) CalculateSup(item) / this.total;
+				List<Set<String>> itemList = result.getOrDefault(sup, new ArrayList<>());
+				itemList.add(item);
+				result.put(sup, itemList);
 			}
 		}
 	}
@@ -73,13 +85,16 @@ public class Aprioricopy {
 			if (count >= this.minSupThreshold) {
 				Set<String> tmp = new HashSet<>();
 				tmp.add(item);
-				this.result.put((double) count / this.total, tmp);
+				double sup = (double) count / this.total;
+				List<Set<String>> itemList = result.getOrDefault(sup, new ArrayList<>());
+				itemList.add(tmp);
+				result.put(sup, itemList);
 				init.add(tmp);
 			}
 		});
 		return init;
 	}
-	
+
 	public Set<Set<String>> combineSet(Set<Set<String>> data) {
 		Set<Set<String>> newSet = new HashSet<>();
 		for (Set<String> i : data) {
@@ -107,20 +122,21 @@ public class Aprioricopy {
 
 				}
 			}
-			if(CalculateSup(i) < minSup){
-                RemoveAll_Include(newSet, i);
-            }
+			if (CalculateSup(i) < minSup) {
+				RemoveAll_Include(newSet, i);
+			}
 		}
 		return newSet;
 	}
 
 	public void RemoveAll_Include(Set<Set<String>> data, Set<String> target_data) {
-        Set<Set<String>> tmp = new HashSet<>(data);
-        for(Set<String> i: tmp) {
-            if(i.containsAll(target_data)) data.remove(i);
-        }
-        return;
-    }
+		Set<Set<String>> tmp = new HashSet<>(data);
+		for (Set<String> i : tmp) {
+			if (i.containsAll(target_data))
+				data.remove(i);
+		}
+		return;
+	}
 
 	public double CalculateSup(Set<String> target) {
 		Integer cnt = 0;
