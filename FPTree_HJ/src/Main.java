@@ -1,10 +1,15 @@
 import FPTree.FPNode;
 import FPTree.FPGrowth;
+import FPTree.ItemCount;
 import FPTree.Pattern;
 
 import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.Map;
+import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.HashMap;
+
 
 
 public class Main {
@@ -24,48 +29,40 @@ public class Main {
         fpGrowth.buildFPTree();
         double min_sup = fpGrowth.min_sup;
 
-        //conditional pattern base check
-        String item = "p";
-//        List<FPNode> conditionalPatternBase = fpGrowth.findConditionalPatternBase(item);
-//        System.out.println("Conditional Pattern Base for item \"" + item + "\":");
-//        for (FPNode patternNode : conditionalPatternBase) {
-//            System.out.print("[" + patternNode.getName() + "] - Count: " + patternNode.getCount() + "\n");
-//            for (FPNode child : patternNode.getChildren()) {
-//                System.out.print("\t[" + child.getName() + "] - Count: " + child.getCount() + "\n");
-//                // Add more levels if necessary
-//            }
-//        }
-        List<Pattern> conditionalPatternBase = fpGrowth.findConditionalPatternBase(item);
+        //System.out.println(fpGrowth.freqItems);
 
-        System.out.println("Conditional Pattern Base for item \"" + item + "\":");
-        for (Pattern pattern : conditionalPatternBase) {
-            System.out.println(pattern.getItems() + " - Count: " + pattern.getSupport());
+
+
+        Map<List<String>, Integer> subpatternMap = new HashMap<>();
+        for (ItemCount item : fpGrowth.freqItems) {
+            List<Pattern> conditionalPatternBase = fpGrowth.findConditionalPatternBase(item.getItems());
+            List<Pattern> conditionalFPTree = fpGrowth.buildConditionalFPTree(conditionalPatternBase, min_sup);
+            List<Pattern> subpatterns = FPGrowth.generateSubpatterns(conditionalFPTree, item.getItems());
+            for (Pattern subpattern : subpatterns) {
+                List<String> items = subpattern.getItems();
+                int count = subpattern.getSupport();
+                subpatternMap.put(items, subpatternMap.getOrDefault(items, 0) + count);
+            }
+            List<String> myList = new ArrayList<>();
+            myList.add(item.getItems());
+            subpatternMap.put(myList,  item.getCount());
         }
 
-//        List<Map<String, Integer>> convertedConditionalPatternBase = fpGrowth.convertConditionalPatternBase(conditionalPatternBase);
-//
-//        System.out.println("Converted Conditional Pattern Base:");
-//        for (Map<String, Integer> patternMap : convertedConditionalPatternBase) {
-//            for (Map.Entry<String, Integer> entry : patternMap.entrySet()) {
-//                System.out.println(entry.getKey() + "=" + entry.getValue() + " ");
-//            }
-//            System.out.println();
-//        }
 
-        List<Pattern> conditionalFPTree = fpGrowth.buildConditionalFPTree(conditionalPatternBase, min_sup);
-
-        System.out.println("Conditional FP Tree:");
-        for (Pattern pattern : conditionalFPTree) {
-            System.out.println(pattern.getItems() + " - Count: " + pattern.getSupport());
+        // Convert map to list of patterns
+        List<Pattern> subpatterns = new ArrayList<>();
+        for (Map.Entry<List<String>, Integer> entry : subpatternMap.entrySet()) {
+            subpatterns.add(new Pattern(entry.getKey(), entry.getValue()));
         }
 
-        List<Pattern> subpatterns = FPGrowth.generateSubpatterns(conditionalFPTree);
+        // Sort subpatterns by support count (descending order)
+        subpatterns.sort(Comparator.comparingInt(Pattern::getSupport));
 
+        // Print subpatterns
         System.out.println("Subpatterns:");
         for (Pattern subpattern : subpatterns) {
-            System.out.println(subpattern.getItems() + " - Count: " + subpattern.getSupport());
+            System.out.println(subpattern.getItems() + " - Count: " + ((double) subpattern.getSupport())/ fpGrowth.transactions.size());
         }
-
 
         long endTime = System.currentTimeMillis();
         System.out.println("FPTree Processing Execution time: " + (endTime - startTime)/1000.0);

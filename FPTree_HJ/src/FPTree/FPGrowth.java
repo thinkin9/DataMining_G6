@@ -81,24 +81,24 @@ public class FPGrowth {
             headerTable.put(i.name, null);
         }
 
-        for (ItemCount i : freqItems){
-            System.out.print("Key : " + i.name);
-            System.out.println(" | Val : " + i.count);
-        }
+//        for (ItemCount i : freqItems){
+//            System.out.print("Key : " + i.name);
+//            System.out.println(" | Val : " + i.count);
+//        }
 
-    //        groceries.csv
-    //        Key : whole milk          | Val : 2510
-    //        Key : other vegetables    | Val : 1901
-    //        Key : rolls/buns          | Val : 1807
-    //        Key : soda                | Val : 1715
-    //
-    //        lecture_example.csv
-    //        Key : c | Val : 4
-    //        Key : f | Val : 4
-    //        Key : a | Val : 3
-    //        Key : b | Val : 3
-    //        Key : m | Val : 3
-    //        Key : p | Val : 3
+        //        groceries.csv
+        //        Key : whole milk          | Val : 2510
+        //        Key : other vegetables    | Val : 1901
+        //        Key : rolls/buns          | Val : 1807
+        //        Key : soda                | Val : 1715
+        //
+        //        lecture_example.csv
+        //        Key : c | Val : 4
+        //        Key : f | Val : 4
+        //        Key : a | Val : 3
+        //        Key : b | Val : 3
+        //        Key : m | Val : 3
+        //        Key : p | Val : 3
 
     }
 
@@ -120,7 +120,7 @@ public class FPGrowth {
             //System.out.println(freqSortedTransaction);
             processTransactionFPTree(fp_root, freqSortedTransaction);
         }
-        checkFPTree();
+        //checkFPTree();
     }
 
 
@@ -234,7 +234,7 @@ public class FPGrowth {
                 parent = parent.parent;
             }
 
-            // add cond. pattern base (Slide #57) with head.count 
+            // add cond. pattern base (Slide #57) with head.count
             conditionalPatternBase.add(new Pattern(path, head.count));
 
             head = head.next;
@@ -361,7 +361,7 @@ public class FPGrowth {
         return subpatterns;
     }
 
-    public static List<Pattern> generateSubpatterns(List<Pattern> patterns) {
+    public static List<Pattern> generateSubpatterns(List<Pattern> patterns, String targetItem) {
         Map<List<String>, Integer> combinedSubpatternsMap = new HashMap<>();
 
         // Generate subpatterns for each pattern and combine them
@@ -369,6 +369,7 @@ public class FPGrowth {
             List<Pattern> subpatterns = generateSubpatterns(pattern);
             for (Pattern subpattern : subpatterns) {
                 List<String> items = subpattern.getItems();
+                items.add(targetItem);
                 int count = subpattern.getSupport();
                 combinedSubpatternsMap.put(items, combinedSubpatternsMap.getOrDefault(items, 0) + count);
             }
@@ -382,9 +383,6 @@ public class FPGrowth {
 
         return combinedSubpatterns;
     }
-
-
-
 
 
 }

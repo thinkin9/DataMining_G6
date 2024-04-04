@@ -45,4 +45,17 @@ public class FPNode {
     public String getName() {
         return name;
     }
+
+    public void setParent(FPNode parent) {
+        this.parent = parent;
+    }
+
+    public void addChild(FPNode child) {
+        children.add(child);
+    }
+
+    public void incrementCount() {
+        count++;
+    }
+
 }
