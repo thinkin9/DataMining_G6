@@ -10,14 +10,12 @@ import java.util.Map;
 import java.util.Set;
 
 public class Aprioricopy {
-	private Double minSup;
 	private Integer minSupThreshold;
 	private Integer total;
 	private List<Set<String>> dataset;
 	private HashMap<Double, List<Set<String>>> result;
 
 	public Aprioricopy(Double minSup, Integer total, List<Set<String>> dataset) {
-		this.minSup = minSup;
 		this.total = total;
 		this.minSupThreshold = (int) Math.ceil(minSup * total);
 		this.dataset = dataset;
@@ -85,7 +83,8 @@ public class Aprioricopy {
 			if (count >= this.minSupThreshold) {
 				Set<String> tmp = new HashSet<>();
 				tmp.add(item);
-				double sup = (double) count / this.total;
+				double sup = count;
+				sup /= this.total;
 				List<Set<String>> itemList = result.getOrDefault(sup, new ArrayList<>());
 				itemList.add(tmp);
 				result.put(sup, itemList);
@@ -122,7 +121,7 @@ public class Aprioricopy {
 
 				}
 			}
-			if (CalculateSup(i) < minSup) {
+			if (CalculateSup(i) < minSupThreshold) {
 				RemoveAll_Include(newSet, i);
 			}
 		}
@@ -138,7 +137,7 @@ public class Aprioricopy {
 		return;
 	}
 
-	public double CalculateSup(Set<String> target) {
+	public Integer CalculateSup(Set<String> target) {
 		Integer cnt = 0;
 		for (Set<String> i : this.dataset) {
 			if (i.containsAll(target))
