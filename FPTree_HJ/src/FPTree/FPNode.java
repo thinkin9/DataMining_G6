@@ -38,6 +38,8 @@ public class FPNode {
         return count;
     }
 
+    public void setCount(int num) {this.count = num;}
+
     public ArrayList<FPNode> getChildren() {
         return children;
     }
@@ -56,6 +58,12 @@ public class FPNode {
 
     public void incrementCount() {
         count++;
+    }
+
+    public void addCount(int num) {count += num;}
+
+    public boolean hasSingleChild() {
+        return this.getChildren().size() == 1;
     }
 
 }
