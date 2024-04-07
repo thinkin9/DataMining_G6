@@ -394,7 +394,7 @@ public class FPGrowth {
                 //checkFPTree(newroot);
 
                 ////////////////THIS COUNTS NOT ALL SUM VAL OF NODE /////////////////////
-                int count = thistable.get(item).getCount();
+                int count = thistable.getTotalCount(item);
                 System.out.println("item count for!!!!!"+item+" : "+count);
                 newPattern.setSupport(count);
                 System.out.println("new Pattern list after: "+newPattern.getItems()+": "+newPattern.getSupport());

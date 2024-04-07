@@ -58,6 +58,18 @@ public class HeaderTable {
         return allItems;
     }
 
+    public int getTotalCount(String item) {
+        int totalCount = 0;
+        if (headerTable.containsKey(item)) {
+            FPNode node = headerTable.get(item);
+            while (node != null) {
+                totalCount += node.getCount();
+                node = node.next;
+            }
+        }
+        return totalCount;
+    }
+
 
 
 }
