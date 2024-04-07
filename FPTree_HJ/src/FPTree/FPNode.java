@@ -66,4 +66,8 @@ public class FPNode {
         return this.getChildren().size() == 1;
     }
 
+    public void removeChild(FPNode childToRemove) {
+        children.remove(childToRemove);
+    }
+
 }

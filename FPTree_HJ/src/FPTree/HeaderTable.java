@@ -21,6 +21,10 @@ public class HeaderTable {
         return headerTable.get(name);
     }
 
+    public void removeItem(String item) {
+        headerTable.remove(item);
+    }
+
 
     public void printHeaderTable() {
         System.out.println("Header Table Contents:");
@@ -68,6 +72,26 @@ public class HeaderTable {
             }
         }
         return totalCount;
+    }
+
+    public void removeAll(String item) {
+        FPNode node = headerTable.get(item);
+
+        while (node != null) {
+            FPNode parentNode = node.parent;
+
+            if (parentNode != null) {
+                if (!node.getChildren().isEmpty()) {
+                    for (FPNode childNode : node.getChildren()) {
+                        parentNode.addChild(childNode);
+                        childNode.setParent(parentNode);
+                    }
+                }
+                parentNode.removeChild(node);
+            }
+            node = node.next;
+        }
+        headerTable.remove(item);
     }
 
 

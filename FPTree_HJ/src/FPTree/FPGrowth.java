@@ -178,7 +178,7 @@ public class FPGrowth {
     }
 
 
-    public FPTreeConstructionResult buildFPTreeFromPatterns(List<Pattern> patterns) {
+    public FPTreeConstructionResult buildFPTreeFromPatterns(List<Pattern> patterns, double threshold) {
         FPNode root = new FPNode("null");
         root.setRoot();
 
@@ -193,18 +193,27 @@ public class FPGrowth {
             processPatternFPTree(root, items, support, newHeaderTable);
         }
 
-        // Print header table
-//        checkFPTree(root);
-//        newHeaderTable.printHeaderTable();
-//        boolean check = isSinglePath(root);
-//        System.out.println(check);
-//        if (check){
-//            generateSinglePathPatterns(root);
-//        }
+        // Remove nodes with support less than the threshold
+        removeNodesWithLowSupport(threshold, newHeaderTable);
+
         checkFPTree(root);
 
-        return new FPTreeConstructionResult(root, newHeaderTable);
+        return new FPTreeConstructionResult(root, newHeaderTable, threshold);
     }
+
+    public void removeNodesWithLowSupport(double threshold, HeaderTable headerTable) {
+
+        // Iterate over all items in the header table
+        for (String item : headerTable.getAllItems()) {
+            int totalCount = headerTable.getTotalCount(item);
+            if (totalCount < threshold) {
+                headerTable.removeAll(item);
+                System.out.println("Remove " + item + ": " + totalCount);
+            }
+        }
+
+    }
+
 
 
     // processPatternFPTree
@@ -311,38 +320,39 @@ public class FPGrowth {
         FPNode currentNode = root.getChildren().get(0);
         while (!currentNode.getChildren().isEmpty() && currentNode.hasSingleChild()) {
             singlePath.add(currentNode);
-//            if (!currentNode.getName().equals("null")) {
-//                singlePath.add(currentNode);
-//            }
             currentNode = currentNode.getChildren().get(0);
         }
         singlePath.add(currentNode);
-//        if (!currentNode.getName().equals("null")) {
-//            singlePath.add(currentNode);
-//        }
 
-        // Generate subsets of single path
-        for (int i = 0; i < singlePath.size(); i++) {
-            for (int j = i; j < singlePath.size(); j++) {
-                Map<String, Integer> subset = new LinkedHashMap<>();
-                for (int k = i; k <= j; k++) {
-                    FPNode node = singlePath.get(k);
-                    subset.put(node.getName(), node.getCount());
-//                    if (!node.getName().equals("null")) {
-//                        subset.put(node.getName(), node.getCount());
-//                    }
-                }
-                singlePathPatterns.add(subset);
-            }
-        }
+        // Generate all possible subsets of single path
+        generateSubsets(singlePath, 0, new LinkedHashMap<>(), singlePathPatterns);
 
         return singlePathPatterns;
     }
 
+    private void generateSubsets(List<FPNode> singlePath, int index, Map<String, Integer> subset, List<Map<String, Integer>> subsets) {
+        if (index == singlePath.size()) {
+            if (!subset.isEmpty()) {
+                subsets.add(new LinkedHashMap<>(subset));
+            }
+            return;
+        }
+
+        // Include current node in the subset
+        FPNode currentNode = singlePath.get(index);
+        subset.put(currentNode.getName(), currentNode.getCount());
+        generateSubsets(singlePath, index + 1, subset, subsets);
+
+        // Exclude current node from the subset
+        subset.remove(currentNode.getName());
+        generateSubsets(singlePath, index + 1, subset, subsets);
+    }
+
+
 
     public List<Pattern> Final = new ArrayList<>();
 
-    public void performFPGrowthRecursive(FPNode currentNode, Pattern patternList, HeaderTable thistable) {
+    public void performFPGrowthRecursive(FPNode currentNode, Pattern patternList, HeaderTable thistable, double thr) {
         if (thistable == null) {
             return;
         }
@@ -351,10 +361,7 @@ public class FPGrowth {
             List<Pattern> singlePathPatterns = generateSinglePathPatterns(currentNode);
             for (Pattern pattern : singlePathPatterns) {
                 //System.out.println(pattern+": "+pattern.getSupport());
-                Pattern newPattern = new Pattern(pattern.getItems(), patternList.getSupport());
-                if (patternList.getSupport() == 0){
-                    newPattern.setSupport(pattern.getSupport());
-                }
+                Pattern newPattern = new Pattern(pattern.getItems(), pattern.getSupport());
                 newPattern.addItems(patternList.getItems());
                 Final.add(newPattern);
 //                System.out.println("before: "+pattern.getItems());
@@ -369,14 +376,11 @@ public class FPGrowth {
 //                Final.add(pattern);
             }
             Final.add(patternList);
-//            if (patternList.getSupport()>=threshold){
-//                Final.add(patternList);
-//            }
+
         } else {
             thistable.printHeaderTable();
             for (String item : thistable.getAllItems()) {
                 System.out.println("Item= "+item);
-                //List<String> newPatternItems = new ArrayList<>(patternList);
                 Pattern newPattern = new Pattern(patternList.getItems(), patternList.getSupport());
                 System.out.println("new Pattern list before: "+newPattern.getItems()+": "+newPattern.getSupport());
 //                List<String> newPatternItems = new ArrayList<>();
@@ -388,17 +392,14 @@ public class FPGrowth {
                 newPattern.addItemToFront(item);
 
                 List<Pattern> conditionalPatternBase = findConditionalPatternBase(item, thistable);
-                FPTreeConstructionResult conditionalTreeRoot = buildFPTreeFromPatterns(conditionalPatternBase);
+                FPTreeConstructionResult conditionalTreeRoot = buildFPTreeFromPatterns(conditionalPatternBase, thr);
                 FPNode newroot = conditionalTreeRoot.getRoot();
-                //System.out.println("newnode :"+newroot.name);
-                //checkFPTree(newroot);
 
-                ////////////////THIS COUNTS NOT ALL SUM VAL OF NODE /////////////////////
                 int count = thistable.getTotalCount(item);
                 System.out.println("item count for!!!!!"+item+" : "+count);
                 newPattern.setSupport(count);
                 System.out.println("new Pattern list after: "+newPattern.getItems()+": "+newPattern.getSupport());
-                performFPGrowthRecursive(newroot,newPattern, conditionalTreeRoot.getHeaderTable());
+                performFPGrowthRecursive(newroot,newPattern, conditionalTreeRoot.getHeaderTable(), thr);
             }
         }
     }

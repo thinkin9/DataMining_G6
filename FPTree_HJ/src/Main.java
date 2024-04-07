@@ -4,6 +4,8 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
+import java.util.Comparator;
 
 
 public class Main {
@@ -27,7 +29,7 @@ public class Main {
 
         List<String > empty = new ArrayList<>();
         Pattern patternItem3 = new Pattern(empty,0);
-        fpGrowth.performFPGrowthRecursive(fpGrowth.fp_root, patternItem3, fpGrowth.headerTable);
+        fpGrowth.performFPGrowthRecursive(fpGrowth.fp_root, patternItem3, fpGrowth.headerTable, min_sup);
 
         //conditional pattern base check
 //        String item = "m";
@@ -41,15 +43,17 @@ public class Main {
 //        String item3 = "m";
 //        //System.out.println(fpGrowth.headerTable.getRoot().getChildren());
 //        List<Pattern> patternBase3 = fpGrowth.findConditionalPatternBase(item3, fpGrowth.headerTable);
-//        FPTreeConstructionResult newhe = fpGrowth.buildFPTreeFromPatterns(patternBase3);
+//        FPTreeConstructionResult newhe = fpGrowth.buildFPTreeFromPatterns(patternBase3, min_sup);
 //        List<String > empty = new ArrayList<>();
 //        Pattern patternItem3 = new Pattern(empty,0);
 //        patternItem3.addItem(item3);
 //        patternItem3.setSupport(0);
-//        fpGrowth.performFPGrowthRecursive(newhe.getRoot(), patternItem3, newhe.getHeaderTable());
+//        fpGrowth.performFPGrowthRecursive(newhe.getRoot(), patternItem3, newhe.getHeaderTable(), min_sup);
+
+        Collections.sort(fpGrowth.Final, Comparator.comparingInt(Pattern::getSupport));
         System.out.println("############");
         for (Pattern pattern : fpGrowth.Final) {
-            System.out.println(pattern.getItems()+": "+pattern.getSupport());
+            System.out.println(pattern.getItems()+": "+((double) pattern.getSupport())/ fpGrowth.transactions.size());
         }
 
 //
