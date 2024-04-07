@@ -5,19 +5,19 @@ import java.io.FileNotFoundException;
 import java.util.*;
 
 public class FPGrowth {
-    public String   file_name;
-    public File     file;
-    public double   threshold; //# of input/whole transactions
-    public double   min_sup;
+    public String   file_name;  // file name
+    public File     file;       // file object
+    public double   threshold;  // threshold value
+    public double   min_sup;    // threshold * #transactions
 
-    public FPNode   fp_root;
-    public List<ArrayList<String>> transactions;
-    public Map<String, Integer> itemCounts;
-    public List<ItemCount> freqItems;
-    public HashMap<String, FPNode> headerTable;
+    public FPNode   fp_root;    // root node
+    public List<ArrayList<String>> transactions;    // Database of Transactions
+    public Map<String, Integer> itemCounts;         // Database of Item-Count Pairs
+    public List<ItemCount> freqItems;               // List of Frequent items
+    public HashMap<String, FPNode> headerTable;     // Table of header
 
 
-    // Constructor
+    // FPGrowth Constructor
     public FPGrowth(String file_name, double threshold){
         this.file_name = file_name;
         this.file = new File(file_name);
@@ -30,11 +30,11 @@ public class FPGrowth {
     }
 
 
-    // buildTransactions
+    // Build Transaction database, List<ArrayList<String>> transactions from the given dataset
     public void buildTransactions() throws FileNotFoundException {
         try {
             Scanner scanner = new Scanner(this.file);
-            // System.out.println(scanner);
+
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
 
@@ -43,6 +43,8 @@ public class FPGrowth {
 
                 this.transactions.add(items);
             }
+
+            // min_sup value is determined by threshold * # transactions
             min_sup = threshold * transactions.size();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -50,11 +52,9 @@ public class FPGrowth {
     }
 
 
-    // buildItemCounts
+    // Build Item-Count database
     public void buildItemCounts(){
-        // System.out.println(transactions.get(0).getClass());
         for (ArrayList<String> transaction : transactions) {
-
             for (String item : transaction) {
                 if (itemCounts.containsKey(item)) {
                     itemCounts.put(item, itemCounts.get(item) + 1);
@@ -65,7 +65,8 @@ public class FPGrowth {
         }
 
         List<String> keySet_itemCounts = new ArrayList<>(itemCounts.keySet());
-        // https://velog.io/@dev-easy/Java-Map%EC%9D%84-Key-Value%EB%A1%9C-%EC%A0%95%EB%A0%AC%ED%95%98%EA%B8%B0
+
+        // Sort keySet_itemCounts based on the frequency of each items
         keySet_itemCounts.sort((e1, e2) -> itemCounts.get(e2).compareTo(itemCounts.get(e1)));
 
         // Ordered items (Slide #51)
@@ -81,30 +82,31 @@ public class FPGrowth {
             headerTable.put(i.name, null);
         }
 
-        for (ItemCount i : freqItems){
-            System.out.print("Key : " + i.name);
-            System.out.println(" | Val : " + i.count);
-        }
+        // Check headerTable
+        // for (ItemCount i : freqItems){
+        //     System.out.print("Key : " + i.name);
+        //     System.out.println(" | Val : " + i.count);
+        // }
 
-    //        groceries.csv
-    //        Key : whole milk          | Val : 2510
-    //        Key : other vegetables    | Val : 1901
-    //        Key : rolls/buns          | Val : 1807
-    //        Key : soda                | Val : 1715
-    //
-    //        lecture_example.csv
-    //        Key : c | Val : 4
-    //        Key : f | Val : 4
-    //        Key : a | Val : 3
-    //        Key : b | Val : 3
-    //        Key : m | Val : 3
-    //        Key : p | Val : 3
-
+        // groceries.csv
+        // Key : whole milk          | Val : 2510
+        // Key : other vegetables    | Val : 1901
+        // Key : rolls/buns          | Val : 1807
+        // Key : soda                | Val : 1715
+        //
+        // lecture_example.csv
+        // Key : c | Val : 4
+        // Key : f | Val : 4
+        // Key : a | Val : 3
+        // Key : b | Val : 3
+        // Key : m | Val : 3
+        // Key : p | Val : 3
     }
 
 
-    // buildFPTree
+    // Build FPTree
     public void buildFPTree(){
+        // Initialize a root node
         fp_root = new FPNode("null");
         fp_root.setRoot();
 
@@ -113,21 +115,19 @@ public class FPGrowth {
 
             for (ItemCount i: freqItems){
                 if (transaction.contains(i.name)){
-                    // System.out.print(i.name);
                     freqSortedTransaction.add(i.name);
                 }
             }
-            //System.out.println(freqSortedTransaction);
+
             processTransactionFPTree(fp_root, freqSortedTransaction);
         }
         checkFPTree();
     }
 
 
-    // processTransactionFPTree
+    // Process a single transaction to build FPTree
     public void processTransactionFPTree(FPNode fp_node, ArrayList<String> freqSortedTransaction){
         for (String name : freqSortedTransaction) {
-            // System.out.println(name);
             boolean item_exist = false;
 
             for (FPNode child : fp_node.children) {
@@ -140,19 +140,22 @@ public class FPGrowth {
             }
 
             if (!item_exist) {
+                // initialize a child node
                 FPNode child = new FPNode(name); // child.count is initially set to 1
                 child.parent = fp_node;
                 fp_node.children.add(child);
 
                 FPNode head = headerTable.get(name);
+
+                // Traverse headerTable to set the linked-list like connection between nodes having the same item name
                 if (head == null) {
                     headerTable.put(name, child);
                 } else {
-                    // find the last head of (name)
+                    // while find the last node having item name as name
                     while (head.next != null) {
                         head = head.next;
                     }
-                    // last head points new child node
+                    // last node points new child node
                     head.next = child;
                 }
                 fp_node = child;
@@ -160,228 +163,286 @@ public class FPGrowth {
         }
     }
 
+    // Traverse FP Tree for checking
     public void checkFPTree(){
-        // Traverse FP Tree for checking
         FPNode root = this.fp_root;
 
         Stack<FPNode> stack = new Stack<>();
 
         stack.push(root);
+        System.out.println("START");
         while(!stack.empty()){
             FPNode ptr = stack.pop();
             System.out.println(ptr.name);
+            System.out.println(ptr.count);
             for(FPNode child: ptr.children){
                 stack.push(child);
             }
         }
+        System.out.println("END");
     }
 
-    // conditional pattern
-//    public List<FPNode> findConditionalPatternBase(String item) {
-//        List<FPNode> conditionalPatternBase = new ArrayList<>();
-//        FPNode head = headerTable.get(item);
-//
-//        if (head == null) {
-//            return conditionalPatternBase;
-//        }
-//
-//        while (head != null) {
-//            List<FPNode> path = new ArrayList<>();
-//            FPNode node = head.parent;
-//
-//            // Traverse the path to root and add nodes to the pattern base
-//            while (node != null && !node.isRoot) {
-//                path.add(new FPNode(node.name)); // Create a new FPNode for each node in the path
-//                node = node.parent; // Move to the parent node
-//            }
-//
-//            // Reverse the path to maintain the original item order
-//            Collections.reverse(path);
-//
-//            // Create the pattern base by linking the nodes
-//            FPNode patternNode = null;
-//            for (FPNode pathNode : path) {
-//                if (patternNode == null) {
-//                    patternNode = pathNode;
-//                    conditionalPatternBase.add(patternNode);
-//                } else {
-//                    patternNode.parent = pathNode;
-//                    pathNode.children.add(patternNode);
-//                    patternNode = pathNode;
-//                }
-//            }
-//
-//            // Add the pattern node to the conditional pattern base
-//            for (int i = 0; i < head.count; i++) {
-//                conditionalPatternBase.add(patternNode);
-//            }
-//
-//            head = head.next;
-//        }
-//        return conditionalPatternBase;
-//    }
-
-    public List<Pattern> findConditionalPatternBase(String item) {
-        List<Pattern> conditionalPatternBase = new ArrayList<>();
-        FPNode head = headerTable.get(item);
-
-        while(head != null){
-            List<String> path = new ArrayList<>();
-            FPNode parent = head.parent;
-
-            while(parent != null && !parent.isRoot) {
-                path.add(0, parent.name);
-                parent = parent.parent;
-            }
-
-            // add cond. pattern base (Slide #57) with head.count 
-            conditionalPatternBase.add(new Pattern(path, head.count));
-
-            head = head.next;
+    public boolean checkSinglePath(FPNode fpnode){
+        boolean tf = true;
+        if(fpnode.children.size() > 1){
+            tf = false;
+            return tf;
         }
-
-        // if (head == null) {
-        //     return conditionalPatternBase;
-        // }
-
-        // while (head != null) {
-        //     List<String> path = new ArrayList<>();
-        //     FPNode node = head.parent;
-
-        //     while (node != null && !node.isRoot) {
-        //         path.add(0, node.name);
-        //         node = node.parent;
-        //     }
-
-        //     for (int i = 0; i < head.count; i++) {
-        //         addPatternToConditionalPatternBase(conditionalPatternBase, path);
-        //     }
-
-        //     head = head.next;
-        // }
-
-        return conditionalPatternBase;
+        else{
+            for (FPNode child: fpnode.children){
+                if (tf) tf = checkSinglePath(child);
+                else break;
+            }
+        }
+        return tf;
     }
 
-    // private void addPatternToConditionalPatternBase(List<Pattern> conditionalPatternBase, List<String> items) {
-    //     for (Pattern pattern : conditionalPatternBase) {
-    //         if (pattern.getItems().equals(items)) {
-    //             pattern.incrementSupport();
-    //             return;
-    //         }
-    //     }
-    //     conditionalPatternBase.add(new Pattern(items, 1));
-    // }
-
-    //get support of each pattern base Map<String, Integer>
-    //To avoid Alphabet order sorting in HashMap, used linked hash map.
-
-//    public List<Map<String, Integer>> convertConditionalPatternBase(List<Pattern> conditionalPatternBase) {
-//        List<Map<String, Integer>> convertedConditionalPatternBase = new ArrayList<>();
-//
-//        for (Pattern pattern : conditionalPatternBase) {
-//            Map<String, Integer> patternMap = new LinkedHashMap<>(); // LinkedHashMap
-//            for (String item : pattern.getItems()) {
-//                patternMap.put(item, pattern.getSupport());
-//            }
-//            convertedConditionalPatternBase.add(patternMap);
-//        }
-//
-//        return convertedConditionalPatternBase;
-//    }
-
-    // conditional FP Tree
-
-    public List<Pattern> buildConditionalFPTree(List<Pattern> conditionalPatternBase, double min_sup) {
-        List<Pattern> conditionalFPTree = new ArrayList<>();
-
-        // add count for each item (pattern base)
-        Map<String, Integer> itemCounts = new LinkedHashMap<>();
-        for (Pattern pattern : conditionalPatternBase) {
-            for (String item : pattern.getItems()) {
-                itemCounts.put(item, itemCounts.getOrDefault(item, 0) + pattern.getSupport());
+    public void patternGrowth(FPNode fpnode){
+        if(checkSinglePath(fpnode)){
+            List<ItemCount> sp_items = new ArrayList<>();
+            FPNode child = fpnode;
+            while(child != null){
+                sp_items.add(new ItemCount(child.name, child.count));
+                if (child.children.isEmpty()) break;
+                else child = child.children.get(0);
             }
-        }
 
-        // save item (>threshold) in the list
-        List<String> frequentItems = new ArrayList<>();
-        for (Map.Entry<String, Integer> entry : itemCounts.entrySet()) {
-            if (entry.getValue() >= min_sup) {
-                frequentItems.add(entry.getKey());
+            for(ItemCount item: sp_items){
+                System.out.print(item.name);
+                System.out.println(item.count);
             }
-        }
 
-        // make new pattern list
-        for (Pattern pattern : conditionalPatternBase) {
-            Map<String, Integer> newItemCounts = new LinkedHashMap<>();
-            for (String item : frequentItems) {
-                if (pattern.getItems().contains(item)) {
-                    newItemCounts.put(item, itemCounts.get(item));
+            List<ArrayList<ItemCount>> subpatterns = generateSubpattern(sp_items);
+            for(ArrayList<ItemCount> subpattern: subpatterns){
+                for(ItemCount item: subpattern){
+                    System.out.print(item.name);
+                    System.out.println(item.count);
                 }
             }
-
-            // merge same pattern set
-            Pattern newPattern = new Pattern(new ArrayList<>(newItemCounts.keySet()), pattern.getSupport());
-            boolean exists = false;
-            for (Pattern existingPattern : conditionalFPTree) {
-                if (existingPattern.getItems().equals(newPattern.getItems())) {
-                    existingPattern.setSupport(existingPattern.getSupport() + newPattern.getSupport());
-                    exists = true;
-                    break;
-                }
-            }
-            if (!exists) {
-                conditionalFPTree.add(newPattern);
-            }
         }
-
-        // remove item < threshold
-        conditionalFPTree.removeIf(pattern -> pattern.getSupport() < min_sup);
-
-        return conditionalFPTree;
     }
 
+    public List<ArrayList<ItemCount>> generateSubpattern(List<ItemCount> sp_items){
+        List<ArrayList<ItemCount>> subpatterns = new ArrayList<ArrayList<ItemCount>>();
 
-    public static List<Pattern> generateSubpatterns(Pattern pattern) {
-        List<Pattern> subpatterns = new ArrayList<>();
-        List<String> items = pattern.getItems();
-        int n = items.size();
+        if(sp_items.size() > 0){
+            ItemCount first = sp_items.get(0);
+            if(sp_items.size() > 1){
+                sp_items.remove(0);
+                List<ArrayList<ItemCount>> recursive_subpatterns = generateSubpattern(sp_items);
 
-        // Subsets of the pattern
-        for (int i = 1; i < (1 << n); i++) {
-            List<String> subpatternItems = new ArrayList<>();
-            for (int j = 0; j < n; j++) {
-                if ((i & (1 << j)) > 0) {
-                    subpatternItems.add(items.get(j));
+                if (first.count >= min_sup) {
+                    List<ArrayList<ItemCount>> prefix_subpatterns = new ArrayList<ArrayList<ItemCount>>();
+                    for (ArrayList<ItemCount> recursive_subpattern : recursive_subpatterns) {
+                        recursive_subpattern.add(0, first);
+                        prefix_subpatterns.add(recursive_subpattern);
+                    }
+                    recursive_subpatterns.addAll(prefix_subpatterns);
+                }
+                subpatterns.addAll(recursive_subpatterns);
+            }
+            // sp_items.size() == 1
+            else{
+                if (first.count >= min_sup){
+                    ArrayList<ItemCount> base = new ArrayList<>();
+                    base.add(first);
+                    subpatterns.add(base);
                 }
             }
-            subpatterns.add(new Pattern(subpatternItems, pattern.getSupport()));
         }
-
         return subpatterns;
     }
 
-    public static List<Pattern> generateSubpatterns(List<Pattern> patterns) {
-        Map<List<String>, Integer> combinedSubpatternsMap = new HashMap<>();
+    // public List<Pattern> generateSubpattern(List<String> sp_items){
+    //     List<Pattern> subpatterns = new ArrayList<>();
+         
+	// 	if(sp_items.size() > 0){
+	// 		String first = sp_items.get(0);
+	// 		if(sp_items.size() > 1){
+	// 			sp_items.remove(0);
+	// 			List<Pattern> recursive_subpatterns = generateSubpattern(sp_items);
 
-        // Generate subpatterns for each pattern and combine them
-        for (Pattern pattern : patterns) {
-            List<Pattern> subpatterns = generateSubpatterns(pattern);
-            for (Pattern subpattern : subpatterns) {
-                List<String> items = subpattern.getItems();
-                int count = subpattern.getSupport();
-                combinedSubpatternsMap.put(items, combinedSubpatternsMap.getOrDefault(items, 0) + count);
-            }
-        }
+    //             for(Pattern subpattern: recursive_subpatterns){
+    //                 for()
+    //             }
 
-        // Convert map back to list of patterns
-        List<Pattern> combinedSubpatterns = new ArrayList<>();
-        for (Map.Entry<List<String>, Integer> entry : combinedSubpatternsMap.entrySet()) {
-            combinedSubpatterns.add(new Pattern(entry.getKey(), entry.getValue()));
-        }
+	// 			subpatterns.addAll(recursive_subpatterns);
 
-        return combinedSubpatterns;
-    }
+
+
+	// 			for(Pattern k_1_subpattern: k_1_subpatterns)
+	// 				for(int i = 0; i < k_1_subpattern.size(); i++){
+	// 					ArrayList<String> combination = new ArrayList<String>();
+	// 					int count = Integer.MAX_VALUE;
+	// 					for(int j = 0; j <= i; j++){
+	// 						for(HeaderNode h: newHeaderTable){
+	// 							if(h.itemID.equals(a.get(j)) && count < h.supportCount){
+	// 								count = h.supportCount;
+	// 							}
+	// 						}
+	// 						combination.add(a.get(j));
+	// 					}
+	// 					for(HeaderNode h: newHeaderTable){
+	// 						if(h.itemID.equals(s) && count < h.supportCount){
+	// 							count = h.supportCount;
+	// 						}
+	// 					}
+	// 					if(count >= minSupport*nTrans){
+	// 						combination.add(s);
+	// 						combinations.add(combination);
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 		ArrayList<String> combination = new ArrayList<String>();
+	// 		combination.add(s);
+	// 		combinations.add(combination);
+	// 	}
+	// 	return combinations;
+	// }
+    // }
+    // public void checkSinglePath(FPNode fpnode){
+    //     boolean check = true;
+    //     while(fh)
+    // }
+
+
+    // public List<Pattern> findConditionalPatternBase(String item) {
+    //     List<Pattern> conditionalPatternBase = new ArrayList<>();
+    //     FPNode head = headerTable.get(item);
+
+    //     while(head != null){
+    //         List<String> path = new ArrayList<>();
+    //         FPNode parent = head.parent;
+
+    //         while(parent != null) {
+    //             path.add(0, parent.name);
+    //             parent = parent.parent;
+    //         }
+
+    //         // add cond. pattern base (Slide #57) with head.count 
+    //         conditionalPatternBase.add(new Pattern(path, head.count));
+    //         // System.out.println(head.count);
+    //         head = head.next;
+    //     }
+
+    //     return conditionalPatternBase;
+    // }
+
+
+    // public List<Pattern> _buildConditionalFPTree(List<Pattern> conditionalPatternBase, double min_sup) {
+    //     List<Pattern> conditionalFPTree = new ArrayList<>();
+
+    //     // add count for each item (pattern base)
+    //     Map<String, Integer> itemCounts = new LinkedHashMap<>();
+    //     for (Pattern pattern : conditionalPatternBase) {
+    //         for (String item : pattern.getItems()) {
+    //             itemCounts.put(item, itemCounts.getOrDefault(item, 0) + pattern.getSupport());
+    //         }
+    //     }
+
+    //     System.out.println("_buildConditionalFPTree");
+    //     for (ItemCount i : freqItems){
+    //         System.out.print(i.name);
+    //         System.out.print(i.count);
+    //     }
+
+    //     System.out.println(headerTable.keySet());
+    //     return conditionalFPTree;
+    // }
+
+
+
+    // public List<Pattern> buildConditionalFPTree(List<Pattern> conditionalPatternBase, double min_sup) {
+    //     List<Pattern> conditionalFPTree = new ArrayList<>();
+
+    //     // add count for each item (pattern base)
+    //     Map<String, Integer> itemCounts = new LinkedHashMap<>();
+    //     for (Pattern pattern : conditionalPatternBase) {
+    //         for (String item : pattern.getItems()) {
+    //             itemCounts.put(item, itemCounts.getOrDefault(item, 0) + pattern.getSupport());
+    //         }
+    //     }
+
+    //     // save item (>threshold) in the list
+    //     List<String> frequentItems = new ArrayList<>();
+    //     for (Map.Entry<String, Integer> entry : itemCounts.entrySet()) {
+    //         if (entry.getValue() >= min_sup) {
+    //             frequentItems.add(entry.getKey());
+    //         }
+    //     }
+
+    //     // make new pattern list
+    //     for (Pattern pattern : conditionalPatternBase) {
+    //         Map<String, Integer> newItemCounts = new LinkedHashMap<>();
+    //         for (String item : frequentItems) {
+    //             if (pattern.getItems().contains(item)) {
+    //                 newItemCounts.put(item, itemCounts.get(item));
+    //             }
+    //         }   
+
+    //         // merge same pattern set
+    //         Pattern newPattern = new Pattern(new ArrayList<>(newItemCounts.keySet()), pattern.getSupport());
+    //         boolean exists = false;
+    //         for (Pattern existingPattern : conditionalFPTree) {
+    //             if (existingPattern.getItems().equals(newPattern.getItems())) {
+    //                 existingPattern.setSupport(existingPattern.getSupport() + newPattern.getSupport());
+    //                 exists = true;
+    //                 break;
+    //             }
+    //         }
+    //         if (!exists) {
+    //             conditionalFPTree.add(newPattern);
+    //         }
+    //     }
+
+    //     // remove item < threshold
+    //     conditionalFPTree.removeIf(pattern -> pattern.getSupport() < min_sup);
+
+    //     return conditionalFPTree;
+    // }
+
+
+    // public static List<Pattern> generateSubpatterns(Pattern pattern) {
+    //     List<Pattern> subpatterns = new ArrayList<>();
+    //     List<String> items = pattern.getItems();
+    //     int n = items.size();
+
+    //     // Subsets of the pattern
+    //     for (int i = 1; i < (1 << n); i++) {
+    //         List<String> subpatternItems = new ArrayList<>();
+    //         for (int j = 0; j < n; j++) {
+    //             if ((i & (1 << j)) > 0) {
+    //                 subpatternItems.add(items.get(j));
+    //             }
+    //         }
+    //         subpatterns.add(new Pattern(subpatternItems, pattern.getSupport()));
+    //     }
+
+    //     return subpatterns;
+    // }
+
+    // public static List<Pattern> generateSubpatterns(List<Pattern> patterns) {
+    //     Map<List<String>, Integer> combinedSubpatternsMap = new HashMap<>();
+
+    //     // Generate subpatterns for each pattern and combine them
+    //     for (Pattern pattern : patterns) {
+    //         List<Pattern> subpatterns = generateSubpatterns(pattern);
+    //         for (Pattern subpattern : subpatterns) {
+    //             List<String> items = subpattern.getItems();
+    //             int count = subpattern.getSupport();
+    //             combinedSubpatternsMap.put(items, combinedSubpatternsMap.getOrDefault(items, 0) + count);
+    //         }
+    //     }
+
+    //     // Convert map back to list of patterns
+    //     List<Pattern> combinedSubpatterns = new ArrayList<>();
+    //     for (Map.Entry<List<String>, Integer> entry : combinedSubpatternsMap.entrySet()) {
+    //         combinedSubpatterns.add(new Pattern(entry.getKey(), entry.getValue()));
+    //     }
+
+    //     return combinedSubpatterns;
+    // }
 
 
 
