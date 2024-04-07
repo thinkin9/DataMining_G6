@@ -3,6 +3,8 @@ package FPTree;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 public class HeaderTable {
     public HashMap<String, FPNode> headerTable;
@@ -28,6 +30,28 @@ public class HeaderTable {
             System.out.println("Item: " + itemName + ", Support: " + node.getName());
         }
     }
+
+    public FPNode getRoot(String name) {
+        FPNode node = headerTable.get(name);
+        if (node != null) {
+            while (node.parent != null) {
+                node = node.parent;
+            }
+        }
+        return node;
+    }
+
+    public List<String> getAllItems() {
+        List<String> allItems = new ArrayList<>();
+        for (Map.Entry<String, FPNode> entry : headerTable.entrySet()) {
+            String key = entry.getKey();
+            if (!allItems.contains(key)) {
+                allItems.add(key);
+            }
+        }
+        return allItems;
+    }
+
 
 
 }

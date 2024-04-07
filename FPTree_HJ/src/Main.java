@@ -1,8 +1,10 @@
 import FPTree.FPNode;
 import FPTree.FPGrowth;
+import FPTree.HeaderTable;
 import FPTree.Pattern;
 
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -26,11 +28,27 @@ public class Main {
 
         System.out.println(fpGrowth.freqItems);
 
+        //fpGrowth.performFPGrowthRecursive(fpGrowth.fp_root, null, fpGrowth.headerTable);
+
         //conditional pattern base check
-        String item = "m";
-        //List<Map<String,Integer>> conditionalPatternBase = fpGrowth.findConditionalPatternBase(item);
-        List<Pattern> patternBase = fpGrowth.findConditionalPatternBase(item, fpGrowth.headerTable);
-        fpGrowth.buildFPTreeFromPatterns(patternBase);
+//        String item = "m";
+//        List<Pattern> patternBase = fpGrowth.findConditionalPatternBase(item, fpGrowth.headerTable);
+//        fpGrowth.buildFPTreeFromPatterns(patternBase);
+//
+//        String item2 = "b";
+//        List<Pattern> patternBase2 = fpGrowth.findConditionalPatternBase(item2, fpGrowth.headerTable);
+//        fpGrowth.buildFPTreeFromPatterns(patternBase2);
+
+        String item3 = "p";
+        List<Pattern> patternBase3 = fpGrowth.findConditionalPatternBase(item3, fpGrowth.headerTable);
+        HeaderTable newhe = fpGrowth.buildFPTreeFromPatterns(patternBase3);
+        List<String> hey = new ArrayList<>();
+        hey.add(item3);
+        fpGrowth.performFPGrowthRecursive(newhe.getRoot("f"), hey, newhe);
+
+        for (Pattern pattern : fpGrowth.Final) {
+            System.out.println(pattern.getItems()+": "+pattern.getSupport());
+        }
 
 //
 //        List<Map<String,Integer>> conditionalFPTree = fpGrowth.buildConditionalFPTree(conditionalPatternBase, min_sup);

@@ -26,4 +26,8 @@ public class Pattern {
     public void setSupport(int support) {
         this.support = support;
     }
+
+    public void addItem(String item) {
+        this.items.add(item);
+    }
 }
