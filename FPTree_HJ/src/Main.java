@@ -25,7 +25,9 @@ public class Main {
 
         System.out.println(fpGrowth.freqItems);
 
-        //fpGrowth.performFPGrowthRecursive(fpGrowth.fp_root, null, fpGrowth.headerTable);
+        List<String > empty = new ArrayList<>();
+        Pattern patternItem3 = new Pattern(empty,0);
+        fpGrowth.performFPGrowthRecursive(fpGrowth.fp_root, patternItem3, fpGrowth.headerTable);
 
         //conditional pattern base check
 //        String item = "m";
@@ -36,16 +38,16 @@ public class Main {
 //        List<Pattern> patternBase2 = fpGrowth.findConditionalPatternBase(item2, fpGrowth.headerTable);
 //        fpGrowth.buildFPTreeFromPatterns(patternBase2);
 
-        String item3 = "p";
-        //System.out.println(fpGrowth.headerTable.getRoot().getChildren());
-        List<Pattern> patternBase3 = fpGrowth.findConditionalPatternBase(item3, fpGrowth.headerTable);
-        FPTreeConstructionResult newhe = fpGrowth.buildFPTreeFromPatterns(patternBase3);
-        List<String > empty = new ArrayList<>();
-        Pattern patternItem3 = new Pattern(empty,0);
-        patternItem3.addItem(item3);
-        patternItem3.setSupport(0);
-        fpGrowth.performFPGrowthRecursive(newhe.getRoot(), patternItem3, newhe.getHeaderTable());
-
+//        String item3 = "m";
+//        //System.out.println(fpGrowth.headerTable.getRoot().getChildren());
+//        List<Pattern> patternBase3 = fpGrowth.findConditionalPatternBase(item3, fpGrowth.headerTable);
+//        FPTreeConstructionResult newhe = fpGrowth.buildFPTreeFromPatterns(patternBase3);
+//        List<String > empty = new ArrayList<>();
+//        Pattern patternItem3 = new Pattern(empty,0);
+//        patternItem3.addItem(item3);
+//        patternItem3.setSupport(0);
+//        fpGrowth.performFPGrowthRecursive(newhe.getRoot(), patternItem3, newhe.getHeaderTable());
+        System.out.println("############");
         for (Pattern pattern : fpGrowth.Final) {
             System.out.println(pattern.getItems()+": "+pattern.getSupport());
         }

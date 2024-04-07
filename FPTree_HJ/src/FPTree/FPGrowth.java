@@ -350,7 +350,11 @@ public class FPGrowth {
         if (isSinglePath(currentNode)) {
             List<Pattern> singlePathPatterns = generateSinglePathPatterns(currentNode);
             for (Pattern pattern : singlePathPatterns) {
+                //System.out.println(pattern+": "+pattern.getSupport());
                 Pattern newPattern = new Pattern(pattern.getItems(), patternList.getSupport());
+                if (patternList.getSupport() == 0){
+                    newPattern.setSupport(pattern.getSupport());
+                }
                 newPattern.addItems(patternList.getItems());
                 Final.add(newPattern);
 //                System.out.println("before: "+pattern.getItems());
@@ -364,13 +368,17 @@ public class FPGrowth {
 ////                }
 //                Final.add(pattern);
             }
+            Final.add(patternList);
+//            if (patternList.getSupport()>=threshold){
+//                Final.add(patternList);
+//            }
         } else {
             thistable.printHeaderTable();
             for (String item : thistable.getAllItems()) {
                 System.out.println("Item= "+item);
                 //List<String> newPatternItems = new ArrayList<>(patternList);
                 Pattern newPattern = new Pattern(patternList.getItems(), patternList.getSupport());
-                System.out.println("new Pattern list before: "+newPattern.getItems());
+                System.out.println("new Pattern list before: "+newPattern.getItems()+": "+newPattern.getSupport());
 //                List<String> newPatternItems = new ArrayList<>();
 //                if (patternList != null) {
 //                    newPatternItems.addAll(patternList);
@@ -378,16 +386,19 @@ public class FPGrowth {
 //                }
                 //newPatternItems.add(0, item);
                 newPattern.addItemToFront(item);
-                System.out.println("new Pattern list after: "+newPattern.getItems());
 
                 List<Pattern> conditionalPatternBase = findConditionalPatternBase(item, thistable);
                 FPTreeConstructionResult conditionalTreeRoot = buildFPTreeFromPatterns(conditionalPatternBase);
                 FPNode newroot = conditionalTreeRoot.getRoot();
                 //System.out.println("newnode :"+newroot.name);
                 //checkFPTree(newroot);
+
+                ////////////////THIS COUNTS NOT ALL SUM VAL OF NODE /////////////////////
                 int count = thistable.get(item).getCount();
+                System.out.println("item count for!!!!!"+item+" : "+count);
                 newPattern.setSupport(count);
-                performFPGrowthRecursive(newroot,newPattern, conditionalTreeRoot.getHeaderTable() );
+                System.out.println("new Pattern list after: "+newPattern.getItems()+": "+newPattern.getSupport());
+                performFPGrowthRecursive(newroot,newPattern, conditionalTreeRoot.getHeaderTable());
             }
         }
     }
