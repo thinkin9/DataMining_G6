@@ -31,14 +31,20 @@ public class HeaderTable {
         }
     }
 
-    public FPNode getRoot(String name) {
-        FPNode node = headerTable.get(name);
-        if (node != null) {
-            while (node.parent != null) {
-                node = node.parent;
+    public FPNode getRoot() {
+        FPNode rootNode = null;
+        for (FPNode node : headerTable.values()) {
+            if (node.isRoot) {
+                rootNode = node;
+                break;
             }
         }
-        return node;
+        if (rootNode != null) {
+            while (rootNode.parent != null) {
+                rootNode = rootNode.parent;
+            }
+        }
+        return rootNode;
     }
 
     public List<String> getAllItems() {

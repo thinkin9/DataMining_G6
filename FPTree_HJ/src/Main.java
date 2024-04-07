@@ -1,7 +1,4 @@
-import FPTree.FPNode;
-import FPTree.FPGrowth;
-import FPTree.HeaderTable;
-import FPTree.Pattern;
+import FPTree.*;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -40,11 +37,14 @@ public class Main {
 //        fpGrowth.buildFPTreeFromPatterns(patternBase2);
 
         String item3 = "p";
+        //System.out.println(fpGrowth.headerTable.getRoot().getChildren());
         List<Pattern> patternBase3 = fpGrowth.findConditionalPatternBase(item3, fpGrowth.headerTable);
-        HeaderTable newhe = fpGrowth.buildFPTreeFromPatterns(patternBase3);
-        List<String> hey = new ArrayList<>();
-        hey.add(item3);
-        fpGrowth.performFPGrowthRecursive(newhe.getRoot("f"), hey, newhe);
+        FPTreeConstructionResult newhe = fpGrowth.buildFPTreeFromPatterns(patternBase3);
+        List<String > empty = new ArrayList<>();
+        Pattern patternItem3 = new Pattern(empty,0);
+        patternItem3.addItem(item3);
+        patternItem3.setSupport(0);
+        fpGrowth.performFPGrowthRecursive(newhe.getRoot(), patternItem3, newhe.getHeaderTable());
 
         for (Pattern pattern : fpGrowth.Final) {
             System.out.println(pattern.getItems()+": "+pattern.getSupport());
