@@ -25,7 +25,7 @@ public class Main {
         fpGrowth.buildFPTree();
         double min_sup = fpGrowth.min_sup;
 
-        System.out.println(fpGrowth.freqItems);
+        //System.out.println(fpGrowth.freqItems);
 
         List<String > empty = new ArrayList<>();
         Pattern patternItem3 = new Pattern(empty,0);
@@ -51,7 +51,7 @@ public class Main {
 //        fpGrowth.performFPGrowthRecursive(newhe.getRoot(), patternItem3, newhe.getHeaderTable());
 
         Collections.sort(fpGrowth.Final, Comparator.comparingInt(Pattern::getSupport));
-        System.out.println("############");
+        //System.out.println("############");
         for (Pattern pattern : fpGrowth.Final) {
             System.out.println(pattern.getItems()+": "+(double)( pattern.getSupport())/fpGrowth.transactions.size());
         }
