@@ -1,7 +1,6 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.FileReader;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -13,7 +12,7 @@ public class Aprioricopy {
 	private Integer minSupThreshold;
 	private Integer total;
 	private List<Set<String>> dataset;
-	private HashMap<Double, List<Set<String>>> result;
+	private HashMap<Double, Set<String>> result;
 
 	public Aprioricopy(Double minSup, Integer total, List<Set<String>> dataset) {
 		this.total = total;
@@ -43,31 +42,34 @@ public class Aprioricopy {
 		Aprioricopy a = new Aprioricopy(minSup, total, Groceries);
 		a.run();
 		a.result.entrySet().stream()
-				.sorted(Map.Entry.<Double, List<Set<String>>>comparingByKey())
+				.sorted(Map.Entry.<Double, Set<String>>comparingByKey())
 				.forEach(entry -> {
 					Double support = entry.getKey();
-					List<Set<String>> itemList = entry.getValue();
+					Set<String> itemList = entry.getValue();
 					itemList.forEach(item -> {
-						System.out.println(item + " " + support);
+						System.out.print(item + " ");
 					});
+					System.out.println(support);
 				});
 		long endTime = System.currentTimeMillis();
-		System.out.println("FPTree Processing Execution time: " + (endTime - startTime) / 1000.0);
+		System.out.println("Apriori Processing Execution time: " + (endTime - startTime) / 1000.0);
 	}
 
 	public void run() {
-		Set<Set<String>> sett = this.initialize();
-		Integer cnt = 1;
-		Integer max = 10;
-		while (cnt < max && !sett.isEmpty()) {
-			Set<Set<String>> newSet = combineSet(sett);
-			sett = newSet;
-			for (Set<String> item : sett) {
-				double sup = (double) CalculateSup(item) / this.total;
-				List<Set<String>> itemList = result.getOrDefault(sup, new ArrayList<>());
-				itemList.add(item);
-				result.put(sup, itemList);
+		Set<Set<String>> LKminus1 = this.initialize();
+		while (!LKminus1.isEmpty()) {
+			Set<Set<String>> CK = combineSet(LKminus1);
+			Set<Set<String>> CK2 = prune(CK, LKminus1);
+			Set<Set<String>> LK = new HashSet<>();
+			for (Set<String> itemset : CK2) {
+				Integer sup = CalculateSup(itemset);
+				if (sup >= minSupThreshold) {
+					LK.add(itemset);
+					Double t = (double) sup / total;
+					this.result.put(t, itemset);
+				}
 			}
+			LKminus1 = LK;
 		}
 	}
 
@@ -85,9 +87,7 @@ public class Aprioricopy {
 				tmp.add(item);
 				double sup = count;
 				sup /= this.total;
-				List<Set<String>> itemList = result.getOrDefault(sup, new ArrayList<>());
-				itemList.add(tmp);
-				result.put(sup, itemList);
+				this.result.put(sup, tmp);
 				init.add(tmp);
 			}
 		});
@@ -102,30 +102,29 @@ public class Aprioricopy {
 				tmp.removeAll(j);
 				if (tmp.size() == 1) {
 					tmp.addAll(j);
-					if (!newSet.contains(tmp)) {
-						Boolean isValid = true;
-						for (String str : tmp) {
-							Set<String> tmpp = new HashSet<>(tmp);
-							tmpp.remove(str);
-							if (!data.contains(tmpp)) {
-								isValid = false;
-								break;
-							}
-						}
-						if (isValid) {
-							if (CalculateSup(tmp) >= minSupThreshold) {
-								newSet.add(tmp);
-							}
-						}
-					}
-
+					newSet.add(tmp);
 				}
-			}
-			if (CalculateSup(i) < minSupThreshold) {
-				RemoveAll_Include(newSet, i);
 			}
 		}
 		return newSet;
+	}
+
+	public Set<Set<String>> prune(Set<Set<String>> CK, Set<Set<String>> LKminus1) {
+		Set<Set<String>> result = new HashSet<>();
+		for (Set<String> c : CK) {
+			boolean isValid = true;
+			for (String str : c) {
+				Set<String> tmpp = new HashSet<>(c);
+				tmpp.remove(str);
+				if (!LKminus1.contains(tmpp)) {
+					isValid = false;
+					break;
+				}
+			}
+			if (isValid)
+				result.add(c);
+		}
+		return result;
 	}
 
 	public void RemoveAll_Include(Set<Set<String>> data, Set<String> target_data) {
