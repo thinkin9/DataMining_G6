@@ -1,10 +1,255 @@
-package FPTree;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.*;
 
-public class FPGrowth {
+
+// Class FPNode
+class FPNode {
+
+    // Root
+    boolean     isRoot;
+
+    // information for a single node
+    int         idx;
+    int         count;
+    String      name;
+
+    // Relationship between nodes
+    ArrayList<FPNode> children;
+    FPNode      parent;
+    FPNode      next;  // next FPNode @HeaderTable
+
+    // Constructor
+    public FPNode(String str){
+        this.isRoot = false;
+        this.idx = -1;
+        this.count = 1;
+        this.name = str;
+        this.children = new ArrayList<FPNode>();
+        this.parent = null;
+        this.next = null;
+    }
+
+    public void setRoot(){
+        this.isRoot = true;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public void setCount(int num) {this.count = num;}
+
+    public ArrayList<FPNode> getChildren() {
+        return children;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setParent(FPNode parent) {
+        this.parent = parent;
+    }
+
+    public void addChild(FPNode child) {
+        children.add(child);
+    }
+
+    public void incrementCount() {
+        count++;
+    }
+
+    public void addCount(int num) {count += num;}
+
+    public boolean hasSingleChild() {
+        return this.getChildren().size() == 1;
+    }
+
+    public void removeChild(FPNode childToRemove) {
+        children.remove(childToRemove);
+    }
+
+}
+
+
+// Class ItemCount
+class ItemCount {
+    public String name;
+    public int count;
+
+    public ItemCount(String name, int count){
+        this.name = name;
+        this.count = count;
+    }
+    public String getItems() {
+        return name;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public String toString() {
+        return "[" + name + "] - Count: " + count;
+    }
+}
+
+
+// Class Pattern
+class Pattern {
+    private List<String> items;
+    private int support;
+
+    public Pattern(List<String> items, int support) {
+        //this.items = items;
+        this.items = new ArrayList<>(items);
+        this.support = support;
+    }
+
+    public List<String> getItems() {
+        return items;
+    }
+
+    public int getSupport() {
+        return support;
+    }
+
+    public void incrementSupport() {
+        this.support++;
+    }
+
+    public void setSupport(int support) {
+        this.support = support;
+    }
+
+    public void addItem(String item) {
+        this.items.add(item);
+    }
+    public void addItems(List<String> newItems) {
+        items.addAll(newItems);
+    }
+
+    public void addItemToFront(String item) {
+        items.add(0, item);
+    }
+}
+
+// Class FPTreeConstructionResult
+class FPTreeConstructionResult {
+    private FPNode root;
+    private HeaderTable headerTable;
+
+    private double threshold;
+
+    public FPTreeConstructionResult(FPNode root, HeaderTable headerTable, double threshold) {
+        this.root = root;
+        this.headerTable = headerTable;
+        this.threshold = threshold;
+    }
+
+    public FPNode getRoot() {
+        return root;
+    }
+
+    public HeaderTable getHeaderTable() {
+        return headerTable;
+    }
+}
+
+
+// Class HeaderTable
+class HeaderTable {
+    public HashMap<String, FPNode> headerTable;
+
+    public HeaderTable() {
+        this.headerTable = new HashMap<>();
+    }
+
+    public void put(String name, FPNode node) {
+        headerTable.put(name, node);
+    }
+
+    public FPNode get(String name) {
+        return headerTable.get(name);
+    }
+
+    public void removeItem(String item) {
+        headerTable.remove(item);
+    }
+
+    public void printHeaderTable() {
+        System.out.println("Header Table Contents:");
+        for (Map.Entry<String, FPNode> entry : headerTable.entrySet()) {
+            String itemName = entry.getKey();
+            FPNode node = entry.getValue();
+            System.out.println("Item: " + itemName + ", Support: " + node.getName());
+        }
+    }
+
+    public FPNode getRoot() {
+        FPNode rootNode = null;
+        for (FPNode node : headerTable.values()) {
+            if (node.isRoot) {
+                rootNode = node;
+                break;
+            }
+        }
+        if (rootNode != null) {
+            while (rootNode.parent != null) {
+                rootNode = rootNode.parent;
+            }
+        }
+        return rootNode;
+    }
+
+    public List<String> getAllItems() {
+        List<String> allItems = new ArrayList<>();
+        for (Map.Entry<String, FPNode> entry : headerTable.entrySet()) {
+            String key = entry.getKey();
+            if (!allItems.contains(key)) {
+                allItems.add(key);
+            }
+        }
+        return allItems;
+    }
+
+    public int getTotalCount(String item) {
+        int totalCount = 0;
+        if (headerTable.containsKey(item)) {
+            FPNode node = headerTable.get(item);
+            while (node != null) {
+                totalCount += node.getCount();
+                node = node.next;
+            }
+        }
+        return totalCount;
+    }
+
+    public void removeAll(String item) {
+        FPNode node = headerTable.get(item);
+
+        while (node != null) {
+            FPNode parentNode = node.parent;
+
+            if (parentNode != null) {
+                if (!node.getChildren().isEmpty()) {
+                    for (FPNode childNode : node.getChildren()) {
+                        parentNode.addChild(childNode);
+                        childNode.setParent(parentNode);
+                    }
+                }
+                parentNode.removeChild(node);
+            }
+            node = node.next;
+        }
+        headerTable.remove(item);
+    }
+}
+
+
+// Class FPGrowth
+class FPGrowth {
     public String   file_name;
     public File     file;
     public double   threshold; //# of input/whole transactions
@@ -215,7 +460,6 @@ public class FPGrowth {
     }
 
 
-
     // processPatternFPTree
     private void processPatternFPTree(FPNode fpNode, List<String> items, int support, HeaderTable newHeaderTable) {
         for (String name : items) {
@@ -405,5 +649,39 @@ public class FPGrowth {
         }
     }
 
+
+}
+
+
+public class A1_G6_t2 {
+    public static void main(String[] args) throws FileNotFoundException {
+
+        String file_name = args[0];
+        double threshold = Double.parseDouble(args[1]);
+
+        long startTime = System.currentTimeMillis();
+
+        FPGrowth fpGrowth = new FPGrowth(file_name, threshold);
+
+        fpGrowth.buildTransactions();
+        fpGrowth.buildItemCounts();
+        fpGrowth.buildFPTree();
+        
+        double min_sup = fpGrowth.min_sup;
+
+        List<String > empty = new ArrayList<>();
+        Pattern patternItem3 = new Pattern(empty,0);
+        fpGrowth.performFPGrowthRecursive(fpGrowth.fp_root, patternItem3, fpGrowth.headerTable, min_sup);
+
+        Collections.sort(fpGrowth.Final, Comparator.comparingInt(Pattern::getSupport));
+        for (Pattern pattern : fpGrowth.Final) {
+            System.out.println(pattern.getItems()+" "+(double)( pattern.getSupport())/fpGrowth.transactions.size());
+        }
+
+        long endTime = System.currentTimeMillis();
+
+        System.out.println("FPTree Processing Execution time: " + (endTime - startTime)/1000.0);
+
+    }
 
 }
