@@ -14,7 +14,7 @@ public class FPGrowth {
     public List<ArrayList<String>> transactions;
     public Map<String, Integer> itemCounts;
     public List<ItemCount> freqItems;
-    public HashMap<String, FPNode> headerTable;
+    public HeaderTable headerTable;
 
 
     // Constructor
@@ -26,7 +26,7 @@ public class FPGrowth {
         this.transactions = new ArrayList<ArrayList<String>>();
         this.itemCounts = new HashMap<String, Integer>();
         this.freqItems = new ArrayList<ItemCount>();
-        this.headerTable = new HashMap<String, FPNode>();
+        this.headerTable = new HeaderTable();
     }
 
 
@@ -105,6 +105,7 @@ public class FPGrowth {
 
     // buildFPTree
     public void buildFPTree(){
+
         fp_root = new FPNode("null");
         fp_root.setRoot();
 
@@ -160,70 +161,104 @@ public class FPGrowth {
         }
     }
 
-    public void checkFPTree(){
+    public void checkFPTree(FPNode N){
         // Traverse FP Tree for checking
-        FPNode root = this.fp_root;
+        FPNode root =N;
 
         Stack<FPNode> stack = new Stack<>();
 
         stack.push(root);
         while(!stack.empty()){
             FPNode ptr = stack.pop();
-            System.out.println(ptr.name);
+            System.out.println(ptr.name+": "+ptr.count);
             for(FPNode child: ptr.children){
                 stack.push(child);
             }
         }
     }
 
-    // conditional pattern
-//    public List<FPNode> findConditionalPatternBase(String item) {
-//        List<FPNode> conditionalPatternBase = new ArrayList<>();
-//        FPNode head = headerTable.get(item);
-//
-//        if (head == null) {
-//            return conditionalPatternBase;
-//        }
-//
-//        while (head != null) {
-//            List<FPNode> path = new ArrayList<>();
-//            FPNode node = head.parent;
-//
-//            // Traverse the path to root and add nodes to the pattern base
-//            while (node != null && !node.isRoot) {
-//                path.add(new FPNode(node.name)); // Create a new FPNode for each node in the path
-//                node = node.parent; // Move to the parent node
-//            }
-//
-//            // Reverse the path to maintain the original item order
-//            Collections.reverse(path);
-//
-//            // Create the pattern base by linking the nodes
-//            FPNode patternNode = null;
-//            for (FPNode pathNode : path) {
-//                if (patternNode == null) {
-//                    patternNode = pathNode;
-//                    conditionalPatternBase.add(patternNode);
-//                } else {
-//                    patternNode.parent = pathNode;
-//                    pathNode.children.add(patternNode);
-//                    patternNode = pathNode;
-//                }
-//            }
-//
-//            // Add the pattern node to the conditional pattern base
-//            for (int i = 0; i < head.count; i++) {
-//                conditionalPatternBase.add(patternNode);
-//            }
-//
-//            head = head.next;
-//        }
-//        return conditionalPatternBase;
-//    }
 
-    public List<Pattern> findConditionalPatternBase(String item) {
+    public FPTreeConstructionResult buildFPTreeFromPatterns(List<Pattern> patterns, double threshold) {
+        FPNode root = new FPNode("null");
+        root.setRoot();
+
+        // Create a new header table
+        HeaderTable newHeaderTable = new HeaderTable();
+
+        // Construct FP Tree
+        for (Pattern pattern : patterns) {
+            List<String> items = pattern.getItems();
+            int support = pattern.getSupport();
+
+            processPatternFPTree(root, items, support, newHeaderTable);
+        }
+
+        // Remove nodes with support less than the threshold
+        removeNodesWithLowSupport(threshold, newHeaderTable);
+
+        checkFPTree(root);
+
+        return new FPTreeConstructionResult(root, newHeaderTable, threshold);
+    }
+
+    public void removeNodesWithLowSupport(double threshold, HeaderTable headerTable) {
+
+        // Iterate over all items in the header table
+        for (String item : headerTable.getAllItems()) {
+            int totalCount = headerTable.getTotalCount(item);
+            if (totalCount < threshold) {
+                headerTable.removeAll(item);
+                System.out.println("Remove " + item + ": " + totalCount);
+            }
+        }
+
+    }
+
+
+
+    // processPatternFPTree
+    private void processPatternFPTree(FPNode fpNode, List<String> items, int support, HeaderTable newHeaderTable) {
+        for (String name : items) {
+            boolean itemExist = false;
+
+            // Check if the item exists as a child of the current node
+            for (FPNode child : fpNode.getChildren()) {
+                if (child.getName().equals(name)) {
+                    child.addCount(support);
+                    itemExist = true;
+                    fpNode = child;
+                    break;
+                }
+            }
+
+            // If the item doesn't exist, create a new node
+            if (!itemExist) {
+                FPNode child = new FPNode(name);
+                child.setCount(support);
+                child.setParent(fpNode);
+                fpNode.addChild(child);
+
+                // Update Header Table
+                FPNode head = newHeaderTable.get(name);
+                if (head == null) {
+                    newHeaderTable.put(name, child);
+                } else {
+                    // Find the last head of (name)
+                    while (head.next != null) {
+                        head = head.next;
+                    }
+                    // Last head points to the new child node
+                    head.next = child;
+                }
+                fpNode = child;
+            }
+        }
+    }
+
+
+    public List<Pattern> findConditionalPatternBase(String item, HeaderTable hT) {
         List<Pattern> conditionalPatternBase = new ArrayList<>();
-        FPNode head = headerTable.get(item);
+        FPNode head = hT.get(item);
 
         while(head != null){
             List<String> path = new ArrayList<>();
@@ -236,152 +271,137 @@ public class FPGrowth {
 
             // add cond. pattern base (Slide #57) with head.count
             conditionalPatternBase.add(new Pattern(path, head.count));
-
+            System.out.println("Base :"+path+":"+head.count);
             head = head.next;
         }
-
-        // if (head == null) {
-        //     return conditionalPatternBase;
-        // }
-
-        // while (head != null) {
-        //     List<String> path = new ArrayList<>();
-        //     FPNode node = head.parent;
-
-        //     while (node != null && !node.isRoot) {
-        //         path.add(0, node.name);
-        //         node = node.parent;
-        //     }
-
-        //     for (int i = 0; i < head.count; i++) {
-        //         addPatternToConditionalPatternBase(conditionalPatternBase, path);
-        //     }
-
-        //     head = head.next;
-        // }
 
         return conditionalPatternBase;
     }
 
-    // private void addPatternToConditionalPatternBase(List<Pattern> conditionalPatternBase, List<String> items) {
-    //     for (Pattern pattern : conditionalPatternBase) {
-    //         if (pattern.getItems().equals(items)) {
-    //             pattern.incrementSupport();
-    //             return;
-    //         }
-    //     }
-    //     conditionalPatternBase.add(new Pattern(items, 1));
-    // }
+    public boolean isSinglePath(FPNode root) {
+        if (root == null) {
+            return false;
+        }
+        FPNode currentNode = root;
+        while (!currentNode.getChildren().isEmpty() && currentNode.hasSingleChild()) {
+            currentNode = currentNode.getChildren().get(0);
+        }
+        return currentNode.getChildren().isEmpty();
+    }
 
-    //get support of each pattern base Map<String, Integer>
-    //To avoid Alphabet order sorting in HashMap, used linked hash map.
+    public List<Pattern> generateSinglePathPatterns(FPNode root) {
+        List<Map<String, Integer>> singlePathPatterns = findAllSinglePathPatterns(root);
+        List<Pattern> patterns = new ArrayList<>();
 
-//    public List<Map<String, Integer>> convertConditionalPatternBase(List<Pattern> conditionalPatternBase) {
-//        List<Map<String, Integer>> convertedConditionalPatternBase = new ArrayList<>();
-//
-//        for (Pattern pattern : conditionalPatternBase) {
-//            Map<String, Integer> patternMap = new LinkedHashMap<>(); // LinkedHashMap
-//            for (String item : pattern.getItems()) {
-//                patternMap.put(item, pattern.getSupport());
+        for (Map<String, Integer> pattern : singlePathPatterns) {
+//            if (pattern.containsKey("null")) {
+//                continue;
 //            }
-//            convertedConditionalPatternBase.add(patternMap);
-//        }
-//
-//        return convertedConditionalPatternBase;
-//    }
-
-    // conditional FP Tree
-
-    public List<Pattern> buildConditionalFPTree(List<Pattern> conditionalPatternBase, double min_sup) {
-        List<Pattern> conditionalFPTree = new ArrayList<>();
-
-        // add count for each item (pattern base)
-        Map<String, Integer> itemCounts = new LinkedHashMap<>();
-        for (Pattern pattern : conditionalPatternBase) {
-            for (String item : pattern.getItems()) {
-                itemCounts.put(item, itemCounts.getOrDefault(item, 0) + pattern.getSupport());
-            }
+            List<String> items = new ArrayList<>(pattern.keySet());
+            int minSupport = Collections.min(pattern.values());
+            Pattern singlePathPattern = new Pattern(items, minSupport);
+            patterns.add(singlePathPattern);
+            System.out.println(items+": "+minSupport);
         }
 
-        // save item (>threshold) in the list
-        List<String> frequentItems = new ArrayList<>();
-        for (Map.Entry<String, Integer> entry : itemCounts.entrySet()) {
-            if (entry.getValue() >= min_sup) {
-                frequentItems.add(entry.getKey());
-            }
+        return patterns;
+    }
+
+    private List<Map<String, Integer>> findAllSinglePathPatterns(FPNode root) {
+        List<Map<String, Integer>> singlePathPatterns = new ArrayList<>();
+        List<FPNode> singlePath = new ArrayList<>();
+
+        // Check if the FP tree is empty
+        if (root.getChildren().isEmpty()) {
+            return singlePathPatterns; // Return an empty list if the tree is empty
         }
 
-        // make new pattern list
-        for (Pattern pattern : conditionalPatternBase) {
-            Map<String, Integer> newItemCounts = new LinkedHashMap<>();
-            for (String item : frequentItems) {
-                if (pattern.getItems().contains(item)) {
-                    newItemCounts.put(item, itemCounts.get(item));
-                }
-            }
+        // Traverse FP tree to find single path
+        FPNode currentNode = root.getChildren().get(0);
+        while (!currentNode.getChildren().isEmpty() && currentNode.hasSingleChild()) {
+            singlePath.add(currentNode);
+            currentNode = currentNode.getChildren().get(0);
+        }
+        singlePath.add(currentNode);
 
-            // merge same pattern set
-            Pattern newPattern = new Pattern(new ArrayList<>(newItemCounts.keySet()), pattern.getSupport());
-            boolean exists = false;
-            for (Pattern existingPattern : conditionalFPTree) {
-                if (existingPattern.getItems().equals(newPattern.getItems())) {
-                    existingPattern.setSupport(existingPattern.getSupport() + newPattern.getSupport());
-                    exists = true;
-                    break;
-                }
+        // Generate all possible subsets of single path
+        generateSubsets(singlePath, 0, new LinkedHashMap<>(), singlePathPatterns);
+
+        return singlePathPatterns;
+    }
+
+    private void generateSubsets(List<FPNode> singlePath, int index, Map<String, Integer> subset, List<Map<String, Integer>> subsets) {
+        if (index == singlePath.size()) {
+            if (!subset.isEmpty()) {
+                subsets.add(new LinkedHashMap<>(subset));
             }
-            if (!exists) {
-                conditionalFPTree.add(newPattern);
-            }
+            return;
         }
 
-        // remove item < threshold
-        conditionalFPTree.removeIf(pattern -> pattern.getSupport() < min_sup);
+        // Include current node in the subset
+        FPNode currentNode = singlePath.get(index);
+        subset.put(currentNode.getName(), currentNode.getCount());
+        generateSubsets(singlePath, index + 1, subset, subsets);
 
-        return conditionalFPTree;
+        // Exclude current node from the subset
+        subset.remove(currentNode.getName());
+        generateSubsets(singlePath, index + 1, subset, subsets);
     }
 
 
-    public static List<Pattern> generateSubpatterns(Pattern pattern) {
-        List<Pattern> subpatterns = new ArrayList<>();
-        List<String> items = pattern.getItems();
-        int n = items.size();
 
-        // Subsets of the pattern
-        for (int i = 1; i < (1 << n); i++) {
-            List<String> subpatternItems = new ArrayList<>();
-            for (int j = 0; j < n; j++) {
-                if ((i & (1 << j)) > 0) {
-                    subpatternItems.add(items.get(j));
-                }
+    public List<Pattern> Final = new ArrayList<>();
+
+    public void performFPGrowthRecursive(FPNode currentNode, Pattern patternList, HeaderTable thistable, double thr) {
+        if (thistable == null) {
+            return;
+        }
+
+        if (isSinglePath(currentNode)) {
+            List<Pattern> singlePathPatterns = generateSinglePathPatterns(currentNode);
+            for (Pattern pattern : singlePathPatterns) {
+                //System.out.println(pattern+": "+pattern.getSupport());
+                Pattern newPattern = new Pattern(pattern.getItems(), pattern.getSupport());
+                newPattern.addItems(patternList.getItems());
+                Final.add(newPattern);
+//                System.out.println("before: "+pattern.getItems());
+//                pattern.addItems(patternList.getItems());
+//                System.out.println("after: "+pattern.getItems());
+//                System.out.println("Pattern list: "+patternList.getItems());
+////                for (String element : patternList) {
+////                    System.out.println("before: "+pattern.getItems());
+////                    pattern.addItem(element);
+////                    System.out.println("after: "+pattern.getItems());
+////                }
+//                Final.add(pattern);
             }
-            subpatterns.add(new Pattern(subpatternItems, pattern.getSupport()));
-        }
+            Final.add(patternList);
 
-        return subpatterns;
-    }
+        } else {
+            thistable.printHeaderTable();
+            for (String item : thistable.getAllItems()) {
+                System.out.println("Item= "+item);
+                Pattern newPattern = new Pattern(patternList.getItems(), patternList.getSupport());
+                System.out.println("new Pattern list before: "+newPattern.getItems()+": "+newPattern.getSupport());
+//                List<String> newPatternItems = new ArrayList<>();
+//                if (patternList != null) {
+//                    newPatternItems.addAll(patternList);
+//                    //System.out.println("pattern: "+newPatternItems);
+//                }
+                //newPatternItems.add(0, item);
+                newPattern.addItemToFront(item);
 
-    public static List<Pattern> generateSubpatterns(List<Pattern> patterns, String targetItem) {
-        Map<List<String>, Integer> combinedSubpatternsMap = new HashMap<>();
+                List<Pattern> conditionalPatternBase = findConditionalPatternBase(item, thistable);
+                FPTreeConstructionResult conditionalTreeRoot = buildFPTreeFromPatterns(conditionalPatternBase, thr);
+                FPNode newroot = conditionalTreeRoot.getRoot();
 
-        // Generate subpatterns for each pattern and combine them
-        for (Pattern pattern : patterns) {
-            List<Pattern> subpatterns = generateSubpatterns(pattern);
-            for (Pattern subpattern : subpatterns) {
-                List<String> items = subpattern.getItems();
-                items.add(targetItem);
-                int count = subpattern.getSupport();
-                combinedSubpatternsMap.put(items, combinedSubpatternsMap.getOrDefault(items, 0) + count);
+                int count = thistable.getTotalCount(item);
+                System.out.println("item count for!!!!!"+item+" : "+count);
+                newPattern.setSupport(count);
+                System.out.println("new Pattern list after: "+newPattern.getItems()+": "+newPattern.getSupport());
+                performFPGrowthRecursive(newroot,newPattern, conditionalTreeRoot.getHeaderTable(), thr);
             }
         }
-
-        // Convert map back to list of patterns
-        List<Pattern> combinedSubpatterns = new ArrayList<>();
-        for (Map.Entry<List<String>, Integer> entry : combinedSubpatternsMap.entrySet()) {
-            combinedSubpatterns.add(new Pattern(entry.getKey(), entry.getValue()));
-        }
-
-        return combinedSubpatterns;
     }
 
 

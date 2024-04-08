@@ -1,15 +1,11 @@
-import FPTree.FPNode;
-import FPTree.FPGrowth;
-import FPTree.ItemCount;
-import FPTree.Pattern;
+import FPTree.*;
 
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.ArrayList;
-import java.util.HashMap;
-
 
 
 public class Main {
@@ -29,40 +25,48 @@ public class Main {
         fpGrowth.buildFPTree();
         double min_sup = fpGrowth.min_sup;
 
-        //System.out.println(fpGrowth.freqItems);
+        System.out.println(fpGrowth.freqItems);
 
+        List<String > empty = new ArrayList<>();
+        Pattern patternItem3 = new Pattern(empty,0);
+        fpGrowth.performFPGrowthRecursive(fpGrowth.fp_root, patternItem3, fpGrowth.headerTable, min_sup);
 
+        //conditional pattern base check
+//        String item = "m";
+//        List<Pattern> patternBase = fpGrowth.findConditionalPatternBase(item, fpGrowth.headerTable);
+//        fpGrowth.buildFPTreeFromPatterns(patternBase);
+//
+//        String item2 = "b";
+//        List<Pattern> patternBase2 = fpGrowth.findConditionalPatternBase(item2, fpGrowth.headerTable);
+//        fpGrowth.buildFPTreeFromPatterns(patternBase2);
 
-        Map<List<String>, Integer> subpatternMap = new HashMap<>();
-        for (ItemCount item : fpGrowth.freqItems) {
-            List<Pattern> conditionalPatternBase = fpGrowth.findConditionalPatternBase(item.getItems());
-            List<Pattern> conditionalFPTree = fpGrowth.buildConditionalFPTree(conditionalPatternBase, min_sup);
-            List<Pattern> subpatterns = FPGrowth.generateSubpatterns(conditionalFPTree, item.getItems());
-            for (Pattern subpattern : subpatterns) {
-                List<String> items = subpattern.getItems();
-                int count = subpattern.getSupport();
-                subpatternMap.put(items, subpatternMap.getOrDefault(items, 0) + count);
-            }
-            List<String> myList = new ArrayList<>();
-            myList.add(item.getItems());
-            subpatternMap.put(myList,  item.getCount());
+//        String item3 = "m";
+//        //System.out.println(fpGrowth.headerTable.getRoot().getChildren());
+//        List<Pattern> patternBase3 = fpGrowth.findConditionalPatternBase(item3, fpGrowth.headerTable);
+//        FPTreeConstructionResult newhe = fpGrowth.buildFPTreeFromPatterns(patternBase3, min_sup);
+//        List<String > empty = new ArrayList<>();
+//        Pattern patternItem3 = new Pattern(empty,0);
+//        patternItem3.addItem(item3);
+//        patternItem3.setSupport(0);
+//        fpGrowth.performFPGrowthRecursive(newhe.getRoot(), patternItem3, newhe.getHeaderTable(), min_sup);
+
+        Collections.sort(fpGrowth.Final, Comparator.comparingInt(Pattern::getSupport));
+        System.out.println("############");
+        for (Pattern pattern : fpGrowth.Final) {
+            System.out.println(pattern.getItems()+": "+((double) pattern.getSupport())/ fpGrowth.transactions.size());
         }
 
+//
+//        List<Map<String,Integer>> conditionalFPTree = fpGrowth.buildConditionalFPTree(conditionalPatternBase, min_sup);
 
-        // Convert map to list of patterns
-        List<Pattern> subpatterns = new ArrayList<>();
-        for (Map.Entry<List<String>, Integer> entry : subpatternMap.entrySet()) {
-            subpatterns.add(new Pattern(entry.getKey(), entry.getValue()));
-        }
 
-        // Sort subpatterns by support count (descending order)
-        subpatterns.sort(Comparator.comparingInt(Pattern::getSupport));
+//        List<Pattern> subpatterns = FPGrowth.generatePatterns(conditionalFPTree, item);
+//
+//        System.out.println("Subpatterns:");
+//        for (Pattern subpattern : subpatterns) {
+//            System.out.println(subpattern.getItems() + " - Count: " + subpattern.getSupport());
+//        }
 
-        // Print subpatterns
-        System.out.println("Subpatterns:");
-        for (Pattern subpattern : subpatterns) {
-            System.out.println(subpattern.getItems() + " - Count: " + ((double) subpattern.getSupport())/ fpGrowth.transactions.size());
-        }
 
         long endTime = System.currentTimeMillis();
         System.out.println("FPTree Processing Execution time: " + (endTime - startTime)/1000.0);
@@ -70,4 +74,3 @@ public class Main {
     }
 
 }
-
