@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -12,7 +13,7 @@ public class Aprioricopy {
 	private Integer minSupThreshold;
 	private Integer total;
 	private List<Set<String>> dataset;
-	private HashMap<Double, Set<String>> result;
+	private HashMap<Double, List<Set<String>>> result;
 
 	public Aprioricopy(Double minSup, Integer total, List<Set<String>> dataset) {
 		this.total = total;
@@ -42,14 +43,13 @@ public class Aprioricopy {
 		Aprioricopy a = new Aprioricopy(minSup, total, Groceries);
 		a.run();
 		a.result.entrySet().stream()
-				.sorted(Map.Entry.<Double, Set<String>>comparingByKey())
+				.sorted(Map.Entry.<Double, List<Set<String>>>comparingByKey())
 				.forEach(entry -> {
 					Double support = entry.getKey();
-					Set<String> itemList = entry.getValue();
+					List<Set<String>> itemList = entry.getValue();
 					itemList.forEach(item -> {
-						System.out.print(item + " ");
+						System.out.println(item + " " + support);
 					});
-					System.out.println(support);
 				});
 		long endTime = System.currentTimeMillis();
 		System.out.println("Apriori Processing Execution time: " + (endTime - startTime) / 1000.0);
@@ -66,7 +66,9 @@ public class Aprioricopy {
 				if (sup >= minSupThreshold) {
 					LK.add(itemset);
 					Double t = (double) sup / total;
-					this.result.put(t, itemset);
+					List<Set<String>> itemList = result.getOrDefault(t, new ArrayList<>());
+					itemList.add(itemset);
+					result.put(t, itemList);
 				}
 			}
 			LKminus1 = LK;
@@ -87,7 +89,9 @@ public class Aprioricopy {
 				tmp.add(item);
 				double sup = count;
 				sup /= this.total;
-				this.result.put(sup, tmp);
+				List<Set<String>> itemList = result.getOrDefault(sup, new ArrayList<>());
+				itemList.add(tmp);
+				this.result.put(sup, itemList);
 				init.add(tmp);
 			}
 		});
