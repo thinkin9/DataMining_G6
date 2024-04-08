@@ -43,17 +43,17 @@ public class Main {
 //        String item3 = "m";
 //        //System.out.println(fpGrowth.headerTable.getRoot().getChildren());
 //        List<Pattern> patternBase3 = fpGrowth.findConditionalPatternBase(item3, fpGrowth.headerTable);
-//        FPTreeConstructionResult newhe = fpGrowth.buildFPTreeFromPatterns(patternBase3, min_sup);
+//        FPTreeConstructionResult newhe = fpGrowth.buildFPTreeFromPatterns(patternBase3);
 //        List<String > empty = new ArrayList<>();
 //        Pattern patternItem3 = new Pattern(empty,0);
 //        patternItem3.addItem(item3);
 //        patternItem3.setSupport(0);
-//        fpGrowth.performFPGrowthRecursive(newhe.getRoot(), patternItem3, newhe.getHeaderTable(), min_sup);
+//        fpGrowth.performFPGrowthRecursive(newhe.getRoot(), patternItem3, newhe.getHeaderTable());
 
         Collections.sort(fpGrowth.Final, Comparator.comparingInt(Pattern::getSupport));
         System.out.println("############");
         for (Pattern pattern : fpGrowth.Final) {
-            System.out.println(pattern.getItems()+": "+((double) pattern.getSupport())/ fpGrowth.transactions.size());
+            System.out.println(pattern.getItems()+": "+(double)( pattern.getSupport())/fpGrowth.transactions.size());
         }
 
 //
