@@ -25,7 +25,6 @@ public class HeaderTable {
         headerTable.remove(item);
     }
 
-
     public void printHeaderTable() {
         System.out.println("Header Table Contents:");
         for (Map.Entry<String, FPNode> entry : headerTable.entrySet()) {
@@ -93,7 +92,4 @@ public class HeaderTable {
         }
         headerTable.remove(item);
     }
-
-
-
 }
