@@ -38,7 +38,9 @@ class FPNode {
         return count;
     }
 
-    public void setCount(int num) {this.count = num;}
+    public void setCount(int num) {
+        this.count = num;
+    }
 
     public ArrayList<FPNode> getChildren() {
         return children;
@@ -60,7 +62,9 @@ class FPNode {
         count++;
     }
 
-    public void addCount(int num) {count += num;}
+    public void addCount(int num) {
+        count += num;
+    }
 
     public boolean hasSingleChild() {
         return this.getChildren().size() == 1;
@@ -82,6 +86,7 @@ class ItemCount {
         this.name = name;
         this.count = count;
     }
+    
     public String getItems() {
         return name;
     }
@@ -245,14 +250,14 @@ class HeaderTable {
 class FPGrowth {
     public String   file_name;
     public File     file;
-    public double   threshold; //# of input/whole transactions
-    public double   min_sup;
+    public double   threshold;  // # of input/whole transactions
+    public double   min_sup;  // min_support
 
     public FPNode   fp_root;
-    public List<ArrayList<String>> transactions;
-    public Map<String, Integer> itemCounts;
-    public List<ItemCount> freqItems;
-    public HeaderTable headerTable;
+    public List<ArrayList<String>> transactions;  // Store Transactions
+    public Map<String, Integer> itemCounts;  // Store Item-Count pair
+    public List<ItemCount> freqItems;  // Store frequent items
+    public HeaderTable headerTable;  // Data structure for header table
 
 
     // Constructor
@@ -268,19 +273,23 @@ class FPGrowth {
     }
 
 
-    // buildTransactions
+    // buildTransactions: Parse transaction from csv-style database
     public void buildTransactions() throws FileNotFoundException {
         try {
             Scanner scanner = new Scanner(this.file);
-            // System.out.println(scanner);
+            
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
 
+                // Parse csv-style line
                 List<String> list_items = Arrays.asList(line.split(","));
                 ArrayList<String> items = new ArrayList<>(list_items);
 
+                // Add to transactions
                 this.transactions.add(items);
             }
+
+            // min_sup value = threshold * transactions.size()
             min_sup = threshold * transactions.size();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -288,11 +297,11 @@ class FPGrowth {
     }
 
 
-    // buildItemCounts
+    // buildItemCounts: Build ItemCounts database from transactions
     public void buildItemCounts(){
-        // System.out.println(transactions.get(0).getClass());
         for (ArrayList<String> transaction : transactions) {
 
+            // Count the occurrency of each items
             for (String item : transaction) {
                 if (itemCounts.containsKey(item)) {
                     itemCounts.put(item, itemCounts.get(item) + 1);
@@ -304,9 +313,10 @@ class FPGrowth {
 
         List<String> keySet_itemCounts = new ArrayList<>(itemCounts.keySet());
         // https://velog.io/@dev-easy/Java-Map%EC%9D%84-Key-Value%EB%A1%9C-%EC%A0%95%EB%A0%AC%ED%95%98%EA%B8%B0
+        // Sort keySet_itemCounts based on the second element(count) of itemCounts
         keySet_itemCounts.sort((e1, e2) -> itemCounts.get(e2).compareTo(itemCounts.get(e1)));
 
-        // Ordered items (Slide #51)
+        // Get Ordered items
         for (String key : keySet_itemCounts) {
             int cnt = itemCounts.get(key);
             if(cnt >= min_sup){
@@ -318,41 +328,22 @@ class FPGrowth {
         for (ItemCount i : freqItems){
             headerTable.put(i.name, null);
         }
-
-//        for (ItemCount i : freqItems){
-//            System.out.print("Key : " + i.name);
-//            System.out.println(" | Val : " + i.count);
-//        }
-
-        //        groceries.csv
-        //        Key : whole milk          | Val : 2510
-        //        Key : other vegetables    | Val : 1901
-        //        Key : rolls/buns          | Val : 1807
-        //        Key : soda                | Val : 1715
-        //
-        //        lecture_example.csv
-        //        Key : c | Val : 4
-        //        Key : f | Val : 4
-        //        Key : a | Val : 3
-        //        Key : b | Val : 3
-        //        Key : m | Val : 3
-        //        Key : p | Val : 3
-
     }
 
 
-    // buildFPTree
+    // buildFPTree: Build FP-Tree
     public void buildFPTree(){
 
+        // Set root node
         fp_root = new FPNode("null");
         fp_root.setRoot();
 
+        // For each transaction, sort items based on the sequence of frequent items, then call processTransactionFPTree to build FP-Tree
         for (ArrayList<String> transaction : transactions) {
             ArrayList<String> freqSortedTransaction = new ArrayList<String>();
 
             for (ItemCount i: freqItems){
                 if (transaction.contains(i.name)){
-                    // System.out.print(i.name);
                     freqSortedTransaction.add(i.name);
                 }
             }
@@ -363,12 +354,13 @@ class FPGrowth {
     }
 
 
-    // processTransactionFPTree
+    // processTransactionFPTree: Processing Transaction to build FP-tree
     public void processTransactionFPTree(FPNode fp_node, ArrayList<String> freqSortedTransaction){
         for (String name : freqSortedTransaction) {
             // System.out.println(name);
             boolean item_exist = false;
 
+            // if fp_node.children has child of which name is same as name of freqSortedTransaction
             for (FPNode child : fp_node.children) {
                 if (child.name.equals(name)) {
                     child.count++;
@@ -378,12 +370,15 @@ class FPGrowth {
                 }
             }
 
+            // Make a new child node
             if (!item_exist) {
                 FPNode child = new FPNode(name); // child.count is initially set to 1
                 child.parent = fp_node;
                 fp_node.children.add(child);
 
                 FPNode head = headerTable.get(name);
+
+                // Set a proper link of header table
                 if (head == null) {
                     headerTable.put(name, child);
                 } else {
@@ -399,6 +394,7 @@ class FPGrowth {
         }
     }
 
+    // To check FP-tree
     public void checkFPTree(FPNode N){
         // Traverse FP Tree for checking
         FPNode root =N;
@@ -414,7 +410,6 @@ class FPGrowth {
             }
         }
     }
-
 
     public FPTreeConstructionResult buildFPTreeFromPatterns(List<Pattern> patterns, double threshold) {
         FPNode root = new FPNode("null");
@@ -494,6 +489,7 @@ class FPGrowth {
     }
 
 
+    // findConditionalPatternBase: Find conditional pattern base
     public List<Pattern> findConditionalPatternBase(String item, HeaderTable hT) {
         List<Pattern> conditionalPatternBase = new ArrayList<>();
         FPNode head = hT.get(item);
@@ -528,6 +524,7 @@ class FPGrowth {
         return currentNode.getChildren().isEmpty();
     }
 
+    // generateSinglePathPatterns: Generate single path pattern
     public List<Pattern> generateSinglePathPatterns(FPNode root) {
         List<Map<String, Integer>> singlePathPatterns = findAllSinglePathPatterns(root);
         List<Pattern> patterns = new ArrayList<>();
