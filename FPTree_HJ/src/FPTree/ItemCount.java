@@ -9,13 +9,6 @@ public class ItemCount {
         this.name = name;
         this.count = count;
     }
-    public String getItems() {
-        return name;
-    }
-
-    public int getCount() {
-        return count;
-    }
 
     public String toString() {
         return "[" + name + "] - Count: " + count;

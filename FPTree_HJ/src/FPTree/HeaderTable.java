@@ -21,10 +21,6 @@ public class HeaderTable {
         return headerTable.get(name);
     }
 
-    public void removeItem(String item) {
-        headerTable.remove(item);
-    }
-
 
     public void printHeaderTable() {
         System.out.println("Header Table Contents:");
