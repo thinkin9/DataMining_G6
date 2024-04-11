@@ -21,17 +21,10 @@ public class Pattern {
         return support;
     }
 
-    public void incrementSupport() {
-        this.support++;
-    }
-
     public void setSupport(int support) {
         this.support = support;
     }
 
-    public void addItem(String item) {
-        this.items.add(item);
-    }
     public void addItems(List<String> newItems) {
         items.addAll(newItems);
     }

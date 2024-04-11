@@ -56,10 +56,6 @@ public class FPNode {
         children.add(child);
     }
 
-    public void incrementCount() {
-        count++;
-    }
-
     public void addCount(int num) {count += num;}
 
     public boolean hasSingleChild() {

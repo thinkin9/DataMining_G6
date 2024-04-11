@@ -1,21 +1,15 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-public class Aprioricopy {
+public class A1_G6_t1 {
 	private Integer minSupThreshold; // minimum support threshold (Integer value)
 	private Integer total; // total number of transactions
 	private List<Set<String>> dataset; // storing database
 	private HashMap<Double, List<Set<String>>> result; // storing result
 
-	public Aprioricopy(Double minSup, Integer total, List<Set<String>> dataset) { // initialize class
+	public A1_G6_t1(Double minSup, Integer total, List<Set<String>> dataset) { // initialize class
 		this.total = total;
 		this.minSupThreshold = (int) Math.ceil(minSup * total); // calculate minimum support threshold based on double
 																// value and total number of transactions
@@ -42,7 +36,7 @@ public class Aprioricopy {
 			total += 1;
 		}
 		br.close();
-		Aprioricopy a = new Aprioricopy(minSup, total, Groceries); // making a new class
+		A1_G6_t1 a = new A1_G6_t1(minSup, total, Groceries); // making a new class
 		a.run(); // execute Apriori algorithm
 		a.result.entrySet().stream() // Sort with support value and print the result
 				.sorted(Map.Entry.<Double, List<Set<String>>>comparingByKey())
