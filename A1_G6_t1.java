@@ -1,21 +1,15 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-public class Aprioricopy {
+public class A1_G6_t1 {
 	private Integer minSupThreshold;
 	private Integer total;
 	private List<Set<String>> dataset;
 	private HashMap<Double, List<Set<String>>> result;
 
-	public Aprioricopy(Double minSup, Integer total, List<Set<String>> dataset) {
+	public A1_G6_t1(Double minSup, Integer total, List<Set<String>> dataset) {
 		this.total = total;
 		this.minSupThreshold = (int) Math.ceil(minSup * total);
 		this.dataset = dataset;
@@ -40,7 +34,7 @@ public class Aprioricopy {
 			total += 1;
 		}
 		br.close();
-		Aprioricopy a = new Aprioricopy(minSup, total, Groceries);
+		A1_G6_t1 a = new A1_G6_t1(minSup, total, Groceries);
 		a.run();
 		a.result.entrySet().stream()
 				.sorted(Map.Entry.<Double, List<Set<String>>>comparingByKey())
@@ -48,7 +42,7 @@ public class Aprioricopy {
 					Double support = entry.getKey();
 					List<Set<String>> itemList = entry.getValue();
 					itemList.forEach(item -> {
-						System.out.println(item + " " + support);
+						System.out.println(item.toString() + " " + support);
 					});
 				});
 		long endTime = System.currentTimeMillis();
