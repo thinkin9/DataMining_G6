@@ -62,7 +62,8 @@ public class A2_G6_t1 {
         }
     }
     
-
+    // 클러스터 다시 분류하기 구현 
+    
     public void Update_centroids() {
         Integer size = Cluster.size();
         Integer centroid_num = 0;
