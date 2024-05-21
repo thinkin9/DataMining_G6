@@ -21,4 +21,14 @@ public class A2_G6_t1 {
         System.out.println("A2_G6_t1 Processing Execution time: " + (endTime - startTime) / 1000.0);
 
     }
+
+    public class Point {
+        Double x;
+        Double y;
+
+        public Point(Double x, Double y) {
+            this.x = x;
+            this.y = y;
+        }
+    }
 }
