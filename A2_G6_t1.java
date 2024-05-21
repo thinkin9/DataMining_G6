@@ -30,5 +30,17 @@ public class A2_G6_t1 {
             this.x = x;
             this.y = y;
         }
+
+        public Double getX() {
+            return this.x;
+        }
+
+        public Double getY() {
+            return this.y;
+        }
+
+        public Double Distance(Point a) {
+            return Math.sqrt((a.x - this.x) * (a.x - this.x) + (a.y - this.y) * (a.y - this.y));
+        }
     }
 }
