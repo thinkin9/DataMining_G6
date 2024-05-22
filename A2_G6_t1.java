@@ -53,6 +53,7 @@ public class A2_G6_t1 {
             return this.cluster_number;
         }
 
+
         public void setC(Integer C) {
             this.cluster_number = C;
         } 
@@ -63,6 +64,34 @@ public class A2_G6_t1 {
     }
     
     // 클러스터 다시 분류하기 구현 
+    public void Update_clusters() {
+        for(Set<Point> cluster : Cluster) {
+            for(Point p : cluster) {
+                Find_nearest_centroid(p);
+            }
+        }
+        Integer now_cluster = 0;
+        Set<Point> changed_Points = new HashSet<>();
+        for(Set<Point> cluster : Cluster) {
+            now_cluster++;
+            for(Point p : cluster) {
+                Integer new_cluster = p.getC();
+                if(now_cluster != new_cluster) 
+                    cluster.remove(p);
+                    changed_Points.add(p);
+            }
+        }
+        now_cluster = 0;
+        for(Set<Point> cluster : Cluster) {
+            now_cluster++;
+            for(Point p : changed_Points) {
+                if(now_cluster == p.getC()) {
+                    cluster.add(p);
+                }
+            }
+        }
+        return;
+    }
     
     public void Update_centroids() {
         Integer size = Cluster.size();
@@ -76,6 +105,19 @@ public class A2_G6_t1 {
                 new_y += p.y / size;
             }
             Centroids.set(centroid_num, new Point(new_x, new_y));
+        }
+        return;
+    }
+
+    public void Find_nearest_centroid(Point p) {
+        Double distance = Double.MAX_VALUE;
+        Integer cluster_num = 0;
+        for(Point centroid : Centroids) {
+            cluster_num++;
+            if(distance > p.Distance(centroid)) {
+                distance = p.Distance(centroid);
+                p.setC(cluster_num);
+            }
         }
         return;
     }
