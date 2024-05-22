@@ -64,6 +64,10 @@ class Cluster {
         points.add(P);
     }
 
+    public void removePoint(Point P) {
+        points.remove(P);
+    }
+
     public void clearPoints() {
         points.clear();
     }
@@ -132,7 +136,7 @@ public class A2_G6_t1 {
             data.add(new Point(str[0], x, y));
         }
         A2_G6_t1 hello = new A2_G6_t1(Pts, data, minX, maxX, minY, maxY);
-        hello.Update_clusters(); // »ç¿ë¹ý. update_cluster ÀÌ¿Ü¿¡ µý°Å Á¶ÀÛÇÒ ÇÊ¿ä ¾ø´Ù
+        hello.Update_clusters(); // ï¿½ï¿½ï¿½ï¿½. update_cluster ï¿½Ì¿Ü¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¿ï¿½ ï¿½ï¿½ï¿½ï¿½
         br.close();
         long endTime = System.currentTimeMillis();
         System.out.println("A2_G6_t1 Processing Execution time: " + (endTime - startTime) / 1000.0);
@@ -175,6 +179,7 @@ public class A2_G6_t1 {
             }
         }
         p.setC(cluster_num);
+        this.clusters.get(cluster_num).removePoint(p);
         this.clusters.get(cluster_num).addPoint(p);
         return;
     }
