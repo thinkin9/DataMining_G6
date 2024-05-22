@@ -81,14 +81,10 @@ public class A2_G6_t1 {
                     changed_Points.add(p);
             }
         }
-        now_cluster = 0;
-        for(Set<Point> cluster : Cluster) {
-            now_cluster++;
-            for(Point p : changed_Points) {
-                if(now_cluster == p.getC()) {
-                    cluster.add(p);
-                }
-            }
+        for(Point p : changed_Points) {
+            Set<Point> s = Cluster.get(p.getC());
+            s.add(p);
+            Cluster.set(p.getC(), s);
         }
         return;
     }
