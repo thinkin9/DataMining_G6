@@ -1,5 +1,7 @@
 import java.io.File;
+import java.io.FileWriter;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.*;
 
 public class A2_G6_t2 {
@@ -9,6 +11,7 @@ public class A2_G6_t2 {
         String fileName;
         int minPts = 0;
         double eps = 0.0;
+        boolean storeResult = true;
 
         int argc = args.length;
         boolean checkEstimatedMinPts = false;
@@ -61,6 +64,16 @@ public class A2_G6_t2 {
 
         System.out.println("A2_G6_t2 Processing Execution time: " + (endTime - startTime)/1000.0);
 
+        if (storeResult) {
+            String groundLabelFileName = "./A2_G6_t2_analysis/" + "e" + String.valueOf(eps).substring(2) + "m" + String.valueOf(minPts) + "groundTruth.txt";
+            String predictedLabelFileName = "./A2_G6_t2_analysis/" + "e" + String.valueOf(eps).substring(2) + "m" + String.valueOf(minPts) + "Predicted.txt";
+
+            try {
+                dbscan.storeResults(groundLabelFileName, predictedLabelFileName);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }
 
@@ -143,6 +156,18 @@ class DBSCAN{
             }
             System.out.println();
         }
+    }
+
+    public void storeResults(String groundLabelFileName, String predictedLabelFileName) throws IOException {
+        FileWriter w1 = new FileWriter(groundLabelFileName);
+        FileWriter w2 = new FileWriter(predictedLabelFileName);
+
+        for (Point point : points) {
+            w1.write(point.groundTruthLabel + "\n");
+            w2.write(point.predictedLabel + "\n");
+        }
+        w1.close();
+        w2.close();
     }
 
     public void scan(){
