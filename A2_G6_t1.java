@@ -97,6 +97,25 @@ class Cluster {
         this.centroid.setX(new_x);
         this.centroid.setY(new_y);
     }
+
+    public Double Inner_Avg_distance(Point p) {
+        Double distance = 0.0d;
+        for(Point c : points) {
+            distance += p.Distance(c);
+        }
+        distance = (Double) (distance / (points.size() - 1));
+        return distance;
+    }
+
+    public Double Outter_Avg_distance(Point p) {
+        Double distance = 0.0d;
+        for(Point c : points) {
+            distance += p.Distance(c);
+        }
+        distance = (Double) (distance / (points.size()));
+        return distance;
+    }
+    
 }
 
 public class A2_G6_t1 {
@@ -184,4 +203,40 @@ public class A2_G6_t1 {
         return;
     }
 
+    public Integer Find_second_nearest_cluster(Point p) {
+        Double min = Double.MAX_VALUE;
+        Integer ans = p.getC();
+        for(Cluster c : this.clusters) {
+            if(c.getNum() != p.getC() && min > p.Distance(c.getCentroid())) {
+                min = p.Distance(c.getCentroid());
+                ans = c.getNum();
+            }
+        }
+        return ans;
+    }
+
+    
+    public Double Calculate_silhouettes() {
+        Double silhouette = 0.0d;
+        Double silhouette_coef_a = 0.0d;
+        Double silhouette_coef_b = 0.0d;
+        for(Point p : this.points) {
+            Integer now_cluster = p.getC();
+            Integer second_nearest = Find_second_nearest_cluster(p);
+            for(Cluster c : this.clusters) {
+                if(c.getNum() == second_nearest) {
+                    silhouette_coef_b = c.Outter_Avg_distance(p);
+                } 
+                if(c.getNum() == now_cluster) {
+                    silhouette_coef_a = c.Inner_Avg_distance(p);
+                }
+            }
+            if(silhouette_coef_b > silhouette_coef_a) {
+                silhouette += ((silhouette_coef_b - silhouette_coef_a) / (silhouette_coef_b) / points.size());
+            } else {
+                silhouette += ((silhouette_coef_b - silhouette_coef_a) / (silhouette_coef_a) / points.size());
+            }
+        }
+        return silhouette;
+    }
 }
