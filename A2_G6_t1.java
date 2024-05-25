@@ -77,11 +77,15 @@ class Cluster {
     }
 
     public Set<Point> getPoints() {
-        return points;
+        return this.points;
     }
 
     public Point getCentroid() {
         return centroid;
+    }
+
+    public Integer getSize() {
+        return this.points.size();
     }
 
     public void Update_centroid() {
@@ -98,22 +102,32 @@ class Cluster {
         this.centroid.setY(new_y);
     }
 
-    public Double Inner_Avg_distance(Point p) {
+    public Double Inner_Avg_distance(Point p, Integer s) {
+        if (s <= 1)
+            return 0.0d;
         Double distance = 0.0d;
         for (Point c : points) {
             distance += p.Distance(c);
         }
-        distance = (Double) (distance / (points.size() - 1));
+        distance = (Double) (distance / (s - 1));
         return distance;
     }
 
-    public Double Outter_Avg_distance(Point p) {
-        Double distance = 0.0d;
-        for (Point c : points) {
-            distance += p.Distance(c);
+    public Double Outter_Avg_distance(Point p, List<Cluster> clusters) {
+        Double minDistance = Double.MAX_VALUE;
+        for (Cluster c : clusters) {
+            if (!c.equals(this)) {
+                Double distance = 0.0d;
+                for (Point point : c.getPoints()) {
+                    distance += p.Distance(point);
+                }
+                distance /= c.getPoints().size();
+                if (distance < minDistance) {
+                    minDistance = distance;
+                }
+            }
         }
-        distance = (Double) (distance / (points.size()));
-        return distance;
+        return minDistance;
     }
 
 }
@@ -143,11 +157,13 @@ public class A2_G6_t1 {
             data.add(new Point(str[0], x, y));
         }
         A2_G6_t1 hello = new A2_G6_t1(Pts, data);
-        hello.Update_clusters(); // ����. update_cluster �̿ܿ� ���� ������ �ʿ� ����
+        hello.Update_clusters();
         br.close();
         long endTime = System.currentTimeMillis();
         System.out.println("A2_G6_t1 Processing Execution time: " + (endTime - startTime) / 1000.0);
 
+        Double silhouetteIndex = hello.Calculate_silhouettes();
+        System.out.println("Silhouette Index: " + silhouetteIndex);
     }
 
     public Integer pts;
@@ -234,14 +250,10 @@ public class A2_G6_t1 {
         for (Point p : this.points) {
             Integer now_cluster = p.getC();
             Integer second_nearest = Find_second_nearest_cluster(p);
-            for (Cluster c : this.clusters) {
-                if (c.getNum() == second_nearest) {
-                    silhouette_coef_b = c.Outter_Avg_distance(p);
-                }
-                if (c.getNum() == now_cluster) {
-                    silhouette_coef_a = c.Inner_Avg_distance(p);
-                }
-            }
+            silhouette_coef_b = this.clusters.get(second_nearest).Outter_Avg_distance(p,
+                    clusters);
+            silhouette_coef_a = this.clusters.get(now_cluster).Inner_Avg_distance(p,
+                    clusters.get(now_cluster).getSize());
             if (silhouette_coef_b > silhouette_coef_a) {
                 silhouette += ((silhouette_coef_b - silhouette_coef_a) / (silhouette_coef_b) / points.size());
             } else {
