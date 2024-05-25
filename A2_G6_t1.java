@@ -102,14 +102,14 @@ class Cluster {
         this.centroid.setY(new_y);
     }
 
-    public Double Inner_Avg_distance(Point p, Integer s) {
-        if (s <= 1)
+    public Double Inner_Avg_distance(Point p, Cluster currentCluster) {
+        if (currentCluster.getSize() <= 1)
             return 0.0d;
         Double distance = 0.0d;
-        for (Point c : points) {
+        for (Point c : currentCluster.getPoints()) {
             distance += p.Distance(c);
         }
-        distance = (Double) (distance / (s - 1));
+        distance = (Double) (distance / (currentCluster.getSize() - 1));
         return distance;
     }
 
@@ -195,7 +195,7 @@ public class A2_G6_t1 {
                 if (currDist >= r) {
                     c = j;
                     nowc = points.get(c);
-                    this.clusters.add(new Cluster(0, nowc));
+                    this.clusters.add(new Cluster(i, nowc));
                     System.out.println(nowc.getX());
                     break;
                 }
@@ -231,35 +231,14 @@ public class A2_G6_t1 {
         return;
     }
 
-    public Integer Find_second_nearest_cluster(Point p) {
-        Double min = Double.MAX_VALUE;
-        Integer ans = p.getC();
-        for (Cluster c : this.clusters) {
-            if (c.getNum() != p.getC() && min > p.Distance(c.getCentroid())) {
-                min = p.Distance(c.getCentroid());
-                ans = c.getNum();
-            }
-        }
-        return ans;
-    }
-
     public Double Calculate_silhouettes() {
         Double silhouette = 0.0d;
-        Double silhouette_coef_a = 0.0d;
-        Double silhouette_coef_b = 0.0d;
         for (Point p : this.points) {
-            Integer now_cluster = p.getC();
-            Integer second_nearest = Find_second_nearest_cluster(p);
-            silhouette_coef_b = this.clusters.get(second_nearest).Outter_Avg_distance(p,
-                    clusters);
-            silhouette_coef_a = this.clusters.get(now_cluster).Inner_Avg_distance(p,
-                    clusters.get(now_cluster).getSize());
-            if (silhouette_coef_b > silhouette_coef_a) {
-                silhouette += ((silhouette_coef_b - silhouette_coef_a) / (silhouette_coef_b) / points.size());
-            } else {
-                silhouette += ((silhouette_coef_b - silhouette_coef_a) / (silhouette_coef_a) / points.size());
-            }
+            Cluster currentCluster = this.clusters.get(p.getC());
+            Double a = currentCluster.Inner_Avg_distance(p, currentCluster);
+            Double b = currentCluster.Outter_Avg_distance(p, this.clusters);
+            silhouette += (b - a) / Math.max(a, b);
         }
-        return silhouette;
+        return silhouette / this.points.size();
     }
 }
