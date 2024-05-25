@@ -54,10 +54,10 @@ class Cluster {
     private Set<Point> points;
     private Point centroid;
 
-    public Cluster(Integer num, Double minX, double maxX, double minY, double maxY) {
+    public Cluster(Integer num, Point centroid) {
         this.num = num;
         points = new HashSet<>();
-        centroid = new Point("", minX + (maxX - minX) * Math.random(), minY + (maxY - minY) * Math.random());
+        this.centroid = centroid;
     }
 
     public void addPoint(Point P) {
@@ -100,7 +100,7 @@ class Cluster {
 
     public Double Inner_Avg_distance(Point p) {
         Double distance = 0.0d;
-        for(Point c : points) {
+        for (Point c : points) {
             distance += p.Distance(c);
         }
         distance = (Double) (distance / (points.size() - 1));
@@ -109,13 +109,13 @@ class Cluster {
 
     public Double Outter_Avg_distance(Point p) {
         Double distance = 0.0d;
-        for(Point c : points) {
+        for (Point c : points) {
             distance += p.Distance(c);
         }
         distance = (Double) (distance / (points.size()));
         return distance;
     }
-    
+
 }
 
 public class A2_G6_t1 {
@@ -135,26 +135,14 @@ public class A2_G6_t1 {
 
         BufferedReader br = new BufferedReader(new FileReader(args[0]));
         String line;
-        Set<Point> data = new HashSet<>();
-        Double maxX = Double.MIN_VALUE;
-        Double maxY = Double.MIN_VALUE;
-        double minX = Double.MAX_VALUE;
-        double minY = Double.MAX_VALUE;
+        List<Point> data = new ArrayList<>();
         while ((line = br.readLine()) != null) {
             String[] str = line.split(",");
             Double x = Double.parseDouble(str[1]);
             Double y = Double.parseDouble(str[2]);
-            if (x > maxX)
-                maxX = x;
-            if (x < minX)
-                minX = x;
-            if (y > maxY)
-                maxY = y;
-            if (y < minY)
-                minY = y;
             data.add(new Point(str[0], x, y));
         }
-        A2_G6_t1 hello = new A2_G6_t1(Pts, data, minX, maxX, minY, maxY);
+        A2_G6_t1 hello = new A2_G6_t1(Pts, data);
         hello.Update_clusters(); // ����. update_cluster �̿ܿ� ���� ������ �ʿ� ����
         br.close();
         long endTime = System.currentTimeMillis();
@@ -163,15 +151,39 @@ public class A2_G6_t1 {
     }
 
     public Integer pts;
-    public Set<Point> points;
+    public List<Point> points;
     public List<Cluster> clusters;
 
-    public A2_G6_t1(Integer Pts, Set<Point> data, Double minX, double maxX, double minY, double maxY) {
+    public A2_G6_t1(Integer Pts, List<Point> data) {
         this.pts = Pts;
         this.points = data;
         this.clusters = new ArrayList<>(Pts);
-        for (Integer i = 0; i < Pts; i++) {
-            this.clusters.add(new Cluster(i, minX, maxX, minY, maxY));
+        Random random = new Random();
+        Integer c = 4500; // random.nextInt(Pts);
+        Point nowc = points.get(c);
+        this.clusters.add(new Cluster(0, nowc));
+
+        Double dist;
+        for (Integer i = 1; i < Pts; i++) {
+            Double totalDistance = 0.0d;
+            List<Double> distances = new ArrayList<>(Pts);
+            for (Integer j = 0; j < points.size(); j++) {
+                dist = nowc.Distance(points.get(j));
+                distances.add(j, dist * dist);
+                totalDistance += dist * dist;
+            }
+            double r = random.nextDouble() * totalDistance;
+            double currDist = 0.0;
+            for (Integer j = 0; j < points.size(); j++) {
+                currDist += distances.get(j);
+                if (currDist >= r) {
+                    c = j;
+                    nowc = points.get(c);
+                    this.clusters.add(new Cluster(0, nowc));
+                    System.out.println(nowc.getX());
+                    break;
+                }
+            }
         }
     }
 
@@ -206,8 +218,8 @@ public class A2_G6_t1 {
     public Integer Find_second_nearest_cluster(Point p) {
         Double min = Double.MAX_VALUE;
         Integer ans = p.getC();
-        for(Cluster c : this.clusters) {
-            if(c.getNum() != p.getC() && min > p.Distance(c.getCentroid())) {
+        for (Cluster c : this.clusters) {
+            if (c.getNum() != p.getC() && min > p.Distance(c.getCentroid())) {
                 min = p.Distance(c.getCentroid());
                 ans = c.getNum();
             }
@@ -215,23 +227,22 @@ public class A2_G6_t1 {
         return ans;
     }
 
-    
     public Double Calculate_silhouettes() {
         Double silhouette = 0.0d;
         Double silhouette_coef_a = 0.0d;
         Double silhouette_coef_b = 0.0d;
-        for(Point p : this.points) {
+        for (Point p : this.points) {
             Integer now_cluster = p.getC();
             Integer second_nearest = Find_second_nearest_cluster(p);
-            for(Cluster c : this.clusters) {
-                if(c.getNum() == second_nearest) {
+            for (Cluster c : this.clusters) {
+                if (c.getNum() == second_nearest) {
                     silhouette_coef_b = c.Outter_Avg_distance(p);
-                } 
-                if(c.getNum() == now_cluster) {
+                }
+                if (c.getNum() == now_cluster) {
                     silhouette_coef_a = c.Inner_Avg_distance(p);
                 }
             }
-            if(silhouette_coef_b > silhouette_coef_a) {
+            if (silhouette_coef_b > silhouette_coef_a) {
                 silhouette += ((silhouette_coef_b - silhouette_coef_a) / (silhouette_coef_b) / points.size());
             } else {
                 silhouette += ((silhouette_coef_b - silhouette_coef_a) / (silhouette_coef_a) / points.size());
