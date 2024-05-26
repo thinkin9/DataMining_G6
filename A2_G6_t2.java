@@ -14,11 +14,15 @@ public class A2_G6_t2 {
         boolean storeResult = true;
 
         int argc = args.length;
+        boolean checkEstimatedBoth = false;
         boolean checkEstimatedMinPts = false;
         boolean checkEstimatedEps = false;
 
-
-        if (argc == 2){
+        if (argc == 1){
+            fileName = args[0];
+            checkEstimatedBoth = true;
+        }
+        else if (argc == 2){
             fileName = args[0];
             if (args[1].contains(".")){
                 checkEstimatedMinPts = true;
@@ -41,7 +45,16 @@ public class A2_G6_t2 {
         String[] distanceMetrics = {"Euclidean", "Manhatten", "Chebyshev", "Minkowski"};
         String distanceMetric = distanceMetrics[0]; // Set Distance Metric
 
-        if (checkEstimatedMinPts){
+        if (checkEstimatedBoth){ // Extra works
+            int estimatedMinPts = 4;  // Need to find optimal MinPts
+            minPts = estimatedMinPts;
+            System.out.println("Estimated MinPts: " + minPts);
+
+            double estimatedEps = 0.5; // Need to find optimal Eps
+            eps = estimatedEps;
+            System.out.println("Estimated eps: " + eps);
+        }
+        else if (checkEstimatedMinPts){
             int estimatedMinPts = 4;  // Need to find optimal MinPts
             minPts = estimatedMinPts;
             System.out.println("Estimated MinPts: " + minPts);
