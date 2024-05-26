@@ -8,12 +8,14 @@ class Point {
     private Double x;
     private Double y;
     private Integer cluster_number;
+    private Integer point_number;
 
-    public Point(String name, Double x, Double y) {
+    public Point(String name, Double x, Double y, Integer num) {
         this.name = name;
         this.x = x;
         this.y = y;
         this.cluster_number = -1;
+        this.point_number = num;
     }
 
     public String getName() {
@@ -42,6 +44,10 @@ class Point {
 
     public void setC(Integer C) {
         this.cluster_number = C;
+    }
+
+    public Integer get_point_num() {
+        return this.point_number;
     }
 
     public Double Distance(Point a) {
@@ -150,11 +156,13 @@ public class A2_G6_t1 {
         BufferedReader br = new BufferedReader(new FileReader(args[0]));
         String line;
         List<Point> data = new ArrayList<>();
+        Integer point_num = 0;
         while ((line = br.readLine()) != null) {
+            point_num++;
             String[] str = line.split(",");
             Double x = Double.parseDouble(str[1]);
             Double y = Double.parseDouble(str[2]);
-            data.add(new Point(str[0], x, y));
+            data.add(new Point(str[0], x, y, point_num));
         }
         A2_G6_t1 hello = new A2_G6_t1(Pts, data);
         hello.Update_clusters();
@@ -164,6 +172,7 @@ public class A2_G6_t1 {
 
         Double silhouetteIndex = hello.Calculate_silhouettes();
         System.out.println("Silhouette Index: " + silhouetteIndex);
+        //hello.pirnt_cluster();
     }
 
     public Integer pts;
@@ -179,12 +188,17 @@ public class A2_G6_t1 {
         Point nowc = points.get(c);
         this.clusters.add(new Cluster(0, nowc));
 
-        Double dist;
+        //Double dist;
         for (Integer i = 1; i < Pts; i++) {
+            Double dist = Double.MAX_VALUE;
             Double totalDistance = 0.0d;
             List<Double> distances = new ArrayList<>(Pts);
             for (Integer j = 0; j < points.size(); j++) {
-                dist = nowc.Distance(points.get(j));
+                for(Cluster cluster : clusters) {
+                    Double tmp = points.get(j).Distance(cluster.getCentroid());
+                    dist = Double.min(dist, tmp);
+                }
+                //dist = nowc.Distance(points.get(j));
                 distances.add(j, dist * dist);
                 totalDistance += dist * dist;
             }
@@ -202,6 +216,17 @@ public class A2_G6_t1 {
             }
         }
     }
+    /* 
+    public void pirnt_cluster() {
+        for(Cluster c : clusters) {
+            String s = "cluster: ";
+            for(Point p : c.getPoints()) {
+                s += "p" + p.get_point_num() + ", ";
+            }
+            System.out.println(s);
+        }
+    }
+    */
 
     public void Update_clusters() {
         for (Cluster cluster : clusters) {
@@ -226,7 +251,7 @@ public class A2_G6_t1 {
             }
         }
         p.setC(cluster_num);
-        this.clusters.get(cluster_num).removePoint(p);
+        //this.clusters.get(cluster_num).removePoint(p);
         this.clusters.get(cluster_num).addPoint(p);
         return;
     }
