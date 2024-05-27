@@ -206,7 +206,13 @@ public class A2_G6_t1 {
             double currDist = 0.0;
             for (Integer j = 0; j < points.size(); j++) {
                 currDist += distances.get(j);
-                if (currDist >= r) {
+                boolean flag = true;
+                for (Cluster k : this.clusters) {
+                    if(k.getCentroid().getX() == points.get(j).getX()) {
+                        flag = false;
+                    }
+                }
+                if (flag && currDist >= r) {
                     c = j;
                     nowc = points.get(c);
                     this.clusters.add(new Cluster(i, nowc));
