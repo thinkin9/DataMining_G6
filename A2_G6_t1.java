@@ -3,6 +3,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+
 class Point {
     private String name;
     private Double x;
@@ -167,7 +170,7 @@ public class A2_G6_t1 {
         br.close();
 
         Integer t = 10; // how much update_cluster is executed per run
-        Integer repeat = 1; // run amount
+        Integer repeat = 2; // run amount
         Double silhouetteIndex = -1.0d;
 
         List<Cluster> Result = new ArrayList<>();
@@ -205,22 +208,31 @@ public class A2_G6_t1 {
         }
         long endTime = System.currentTimeMillis();
         System.out.println("A2_G6_t1 Processing Execution time: " + (endTime - startTime) / 1000.0);
-
+        // System.out.println("Silhouette Index: " + silhouetteIndex);
         if (mode == 0) {
-            System.out.println("Silhouette Index: " + silhouetteIndex);
         } else if (mode == 1) {
             System.out.println("estimated k: " + Pts);
-            System.out.println("Silhouette Index: " + silhouetteIndex);
         }
         for (Cluster c : Result) {
-            Set<Point> p = new HashSet<>();
-            p = c.getPoints();
-            System.out.print("Cluster #" + (c.getNum() + 1) + " => ");
-            for (Point pt : p) {
-                System.out.print(pt.getName() + " ");
+            List<Point> pts = new ArrayList<>();
+            for (Point pt : c.getPoints()) {
+                pts.add(pt);
             }
-            System.out.println();
+            pts.sort((pt1, pt2) -> {
+                int num1 = Integer.parseInt(pt1.getName().substring(1));
+                int num2 = Integer.parseInt(pt2.getName().substring(1));
+                return Integer.compare(num1, num2);
+            });
+            System.out.print("Cluster #" + (c.getNum() + 1) + " => ");
+            for (Point pt : pts) {
+                // System.out.print(pt.getName() + " ");
+            }
+            System.out.println(c.getCentroid().getX());
         }
+
+        String outputFilename = "kmeans_results.csv";
+        A2_G6_t1 a = new A2_G6_t1(1, data);
+        a.save_CSV(outputFilename, Result); // Add this line to save results
 
         // hello.pirnt_cluster();
     }
@@ -262,7 +274,8 @@ public class A2_G6_t1 {
                 currDist += distances.get(j);
                 boolean flag = true;
                 for (Cluster k : this.clusters) {
-                    if (k.getCentroid() == this.points.get(j)) {
+                    if (k.getCentroid().getX() == this.points.get(j).getX() && k.getCentroid().getY() == this.points
+                            .get(j).getY()) {
                         flag = false;
                     }
                 }
@@ -300,9 +313,9 @@ public class A2_G6_t1 {
     }
 
     public Double run_and_return_silhouette(Integer Pts, Integer t) {
-        List<Point> old_clusters = new ArrayList<>(Pts);
-        List<Point> new_clusters = new ArrayList<>(Pts);
         for (int i = 0; i < t; i++) {
+            List<Point> old_clusters = new ArrayList<>(Pts);
+            List<Point> new_clusters = new ArrayList<>(Pts);
             for (int j = 0; j < Pts; j++) {
                 old_clusters.add(j, this.clusters.get(j).getCentroid());
             }
@@ -343,5 +356,17 @@ public class A2_G6_t1 {
             silhouette += (b - a) / Math.max(a, b);
         }
         return silhouette / this.points.size();
+    }
+
+    public void save_CSV(String filename, List<Cluster> points) throws IOException {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(filename));
+        writer.write("name,x,y,cluster\n");
+
+        for (Cluster c : points) {
+            for (Point point : c.getPoints()) {
+                writer.write(point.getName() + "," + point.getX() + "," + point.getY() + "," + point.getC() + "\n");
+            }
+        }
+        writer.close();
     }
 }
