@@ -47,9 +47,18 @@ public class A2_G6_t2 {
             System.out.println("Estimated MinPts: " + minPts);
         }
         else if (checkEstimatedEps){
-            double estimatedEps = 0.5; // Need to find optimal Eps
-            eps = estimatedEps;
+//            double estimatedEps = 0.5; // Need to find optimal Eps
+//            eps = estimatedEps;
+//            System.out.println("Estimated eps: " + eps);
+
+            DBSCAN dbscan = new DBSCAN(fileName, minPts, eps, distanceMetric);
+            dbscan.readCSV();
+            eps = dbscan.estimateEps();
             System.out.println("Estimated eps: " + eps);
+            dbscan.setEps(eps);
+            dbscan.scan();
+            dbscan.printConfig();
+            dbscan.printClusters();
         }
 
         DBSCAN dbscan = new DBSCAN(fileName, minPts, eps, distanceMetric);
@@ -65,15 +74,25 @@ public class A2_G6_t2 {
         System.out.println("A2_G6_t2 Processing Execution time: " + (endTime - startTime)/1000.0);
 
         if (storeResult) {
-            String groundLabelFileName = "./A2_G6_t2_analysis/" + "e" + String.valueOf(eps).substring(2) + "m" + String.valueOf(minPts) + "groundTruth.txt";
-            String predictedLabelFileName = "./A2_G6_t2_analysis/" + "e" + String.valueOf(eps).substring(2) + "m" + String.valueOf(minPts) + "Predicted.txt";
-
+            String resultFileName = "./A2_G6_t2_analysis/clustering_result.csv";
             try {
-                dbscan.storeResults(groundLabelFileName, predictedLabelFileName);
+                dbscan.storeResults(resultFileName);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
+
+
+//        if (storeResult) {
+//            String groundLabelFileName = "./A2_G6_t2_analysis/" + "e" + String.valueOf(eps).substring(2) + "m" + String.valueOf(minPts) + "groundTruth.txt";
+//            String predictedLabelFileName = "./A2_G6_t2_analysis/" + "e" + String.valueOf(eps).substring(2) + "m" + String.valueOf(minPts) + "Predicted.txt";
+//
+//            try {
+//                dbscan.storeResults(groundLabelFileName, predictedLabelFileName);
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
     }
 }
 
@@ -112,6 +131,10 @@ class DBSCAN{
         this.minPts = minPts;
         this.eps = eps;
         this.distanceMetric = distanceMetric;
+    }
+
+    public void setEps(double eps) {
+        this.eps = eps;
     }
 
     // Parse the dataset file (.csv)
@@ -261,6 +284,68 @@ class DBSCAN{
     private double minkowskiDistance(Point p1, Point p2, int p) {
         return Math.pow(Math.pow(Math.abs(p1.x - p2.x), p) + Math.pow(Math.abs(p1.y - p2.y), p), 1.0 / p);
     }
+
+    public double estimateEps() {
+        List<Double> kDistances = new ArrayList<>();
+        for (Point p1 : points) {
+            List<Double> distances = new ArrayList<>();
+            for (Point p2 : points) {
+                if (!p1.equals(p2)) {
+                    distances.add(calcDistance(p1, p2));
+                }
+            }
+            Collections.sort(distances);
+            kDistances.add(distances.get(minPts-1));
+//            double kDistSum = 0.0;
+//            for (int i = 0; i < minPts; i++) {
+//                kDistSum += distances.get(i);
+//            }
+//            kDistances.add(kDistSum / minPts);
+        }
+
+        Collections.sort(kDistances);
+        return findKneePoint(kDistances);
+    }
+
+    private double findKneePoint(List<Double> sortedDistances) {
+        int nPoints = sortedDistances.size();
+        double maxDistance = 0.0;
+        int kneePoint = 0;
+
+        for (int i = 0; i < nPoints; i++) {
+            double distance = perpendicularDistance(sortedDistances, i);
+            if (distance > maxDistance) {
+                maxDistance = distance;
+                kneePoint = i;
+            }
+        }
+
+        return sortedDistances.get(kneePoint);
+    }
+
+    private double perpendicularDistance(List<Double> sortedDistances, int i) {
+        double x1 = 0;
+        double y1 = sortedDistances.get(0);
+        double x2 = sortedDistances.size() - 1;
+        double y2 = sortedDistances.get(sortedDistances.size() - 1);
+
+        double x0 = i;
+        double y0 = sortedDistances.get(i);
+
+        double numerator = Math.abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1);
+        double denominator = Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
+
+        return numerator / denominator;
+    }
+
+    public void storeResults(String resultFileName) throws IOException {
+        FileWriter writer = new FileWriter(resultFileName);
+        for (Point point : points) {
+            writer.write(point.id + "," + point.x + "," + point.y + "," + point.predictedLabel + "\n");
+        }
+        writer.close();
+    }
+
 }
 
 
