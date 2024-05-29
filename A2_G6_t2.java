@@ -62,7 +62,7 @@ public class A2_G6_t2 {
 
             // Finding optimal minPts
             int estimatedMinPts = dbscan.evalMinPts();  // Need to find optimal MinPts
-            minPts = 3;
+            minPts = estimatedMinPts;
             dbscan.setMinPts(minPts);
             System.out.println("Estimated MinPts: " + minPts);
 
