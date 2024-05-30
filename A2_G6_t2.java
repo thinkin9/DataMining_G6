@@ -50,12 +50,17 @@ public class A2_G6_t2 {
 
 
         if (checkEstimatedBoth){ // Extra works
-            int estimatedMinPts = 4;  // Need to find optimal MinPts
+            int estimatedMinPts = 4;  // 2-dim
             minPts = estimatedMinPts;
-            System.out.println("Estimated MinPts: " + minPts);
+            dbscan.setMinPts(minPts);
 
             eps = dbscan.estimateEps();
+            dbscan.setEps(eps);
             System.out.println("Estimated eps: " + eps);
+
+            minPts = dbscan.evalMinPts();
+            dbscan.setMinPts(minPts);
+            System.out.println("Estimated MinPts: " + minPts);
         }
         else if (checkEstimatedMinPts){
             dbscan.setEps(eps);
@@ -70,7 +75,7 @@ public class A2_G6_t2 {
         else if (checkEstimatedEps){
             dbscan.setMinPts(minPts);
 
-            eps = dbscan.estimateEps_min();
+            eps = dbscan.estimateEps();
             dbscan.setEps(eps);
             System.out.println("Estimated eps: " + eps);
         }
@@ -85,7 +90,6 @@ public class A2_G6_t2 {
 
         dbscan.printConfig();
         dbscan.printClusters();
-
         System.out.println("A2_G6_t2 Processing Execution time: " + (endTime - startTime)/1000.0);
 
         if (storeResult) {
@@ -343,7 +347,8 @@ class DBSCAN {
     }
 
     // Estimating optimal eps using k-distance graph heuristic method
-    public double estimateEps_min() {
+
+    public double estimateEps() {
         List<Double> kDistances = new ArrayList<>();
         for (Point p1 : points) {
             List<Double> distances = new ArrayList<>();
@@ -353,18 +358,61 @@ class DBSCAN {
                 }
             }
             Collections.sort(distances);
-            kDistances.add(distances.get(minPts-1));
-//            double kDistSum = 0.0;
-//            for (int i = 0; i < minPts; i++) {
-//                kDistSum += distances.get(i);
-//            }
-//            kDistances.add(kDistSum / minPts);
+            double first_Distance = distances.get(minPts - 1); // 기준점의 minPts번째로 가까운 점의 거리
+            Point the_point =null;
+
+            for (Point p2 : points) {
+                if (calcDistance(p1, p2) == first_Distance) {
+                    the_point = p2;
+                    break;
+                }
+            }
+
+            if (the_point != null) {
+                List<Double> secondDistances = new ArrayList<>();
+                for (Point p3 : points) {
+                    if (!p1.equals(p3) && !the_point.equals(p3)) {
+                        secondDistances.add(calcDistance(the_point, p3));
+                    }
+                }
+
+                Collections.sort(secondDistances);
+                double second_Distance = secondDistances.get(minPts - 1);
+
+                double kDistance = Math.max(first_Distance, second_Distance);
+                kDistances.add(kDistance);
+            }
         }
 
         Collections.sort(kDistances);
         saveKDistances(kDistances, "./A2_G6_t2_analysis/k_distances.csv");
         return findKneePoint(kDistances);
     }
+
+
+//    public double estimateEps() {
+//        List<Double> kDistances = new ArrayList<>();
+//        for (Point p1 : points) {
+//            List<Double> distances = new ArrayList<>();
+//            for (Point p2 : points) {
+//                if (!p1.equals(p2)) {
+//                    distances.add(calcDistance(p1, p2));
+//                }
+//            }
+//            Collections.sort(distances);
+//            kDistances.add(distances.get(minPts-1));
+//            // set the mean value of MinPts points
+////            double kDistSum = 0.0;
+////            for (int i = 0; i < minPts; i++) {
+////                kDistSum += distances.get(i);
+////            }
+////            kDistances.add(kDistSum / minPts);
+//        }
+//
+//        Collections.sort(kDistances);
+//        saveKDistances(kDistances, "./A2_G6_t2_analysis/k_distances.csv");
+//        return findKneePoint(kDistances);
+//    }
 
     public void saveKDistances(List<Double> kDistances, String filename) {
         try (FileWriter writer = new FileWriter(filename)) {
