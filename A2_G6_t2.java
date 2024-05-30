@@ -7,7 +7,7 @@ import java.util.*;
 public class A2_G6_t2 {
     public static void main(String[] args) throws FileNotFoundException {
 
-        // Argument Parsing: java A2_G2_t2 ./database/artd-31.csv 5 0.5
+        // Argument Parsing: java A2_G6_t2 ./database/artd-31.csv 5 0.5
         String fileName;
         int minPts = 0;
         double eps = 0.0;
@@ -53,8 +53,7 @@ public class A2_G6_t2 {
             minPts = estimatedMinPts;
             System.out.println("Estimated MinPts: " + minPts);
 
-            double estimatedEps = 0.5; // Need to find optimal Eps
-            eps = estimatedEps;
+            eps = dbscan.estimateEps();
             System.out.println("Estimated eps: " + eps);
         }
         else if (checkEstimatedMinPts){
@@ -70,8 +69,7 @@ public class A2_G6_t2 {
         else if (checkEstimatedEps){
             dbscan.setMinPts(minPts);
 
-            double estimatedEps = 0.5; // Need to find optimal Eps
-            eps = estimatedEps;
+            eps = dbscan.estimateEps();
             dbscan.setEps(eps);
             System.out.println("Estimated eps: " + eps);
         }
@@ -102,12 +100,11 @@ public class A2_G6_t2 {
 }
 
 class Point {
-    String      id;
-    double      x, y;
-    int         groundTruthLabel;
-    int         predictedLabel = 0;  // -1 for noise, 0 for unpredicted label, and 1 ~ n for predicted label
-    boolean     classified = false;
-
+    String id;
+    double x, y;
+    int groundTruthLabel;
+    int predictedLabel = 0;  // -1 for noise, 0 for unpredicted label, and 1 ~ n for predicted label
+    boolean classified = false;
 
     // Constructor
     public Point(String id, double x, double y, int groundTruth) {
@@ -118,16 +115,16 @@ class Point {
     }
 }
 
-class DBSCAN{
-    String      fileName;
-    File        file;
-    int         minPts;
-    double      eps;
+class DBSCAN {
+    String fileName;
+    File file;
+    int minPts;
+    double eps;
     List<Point> points = new ArrayList<>();
 
-    String      distanceMetric;
+    String distanceMetric;
 
-    int         clusterId = 1; // Starting out clusterId with 1
+    int clusterId = 1; // Starting out clusterId with 1
     List<List<Point>> clusters = new ArrayList<>();
 
     // Constructor
@@ -136,18 +133,18 @@ class DBSCAN{
         this.distanceMetric = distanceMetric;
     }
 
-    public void setMinPts(int minPts){
+    public void setMinPts(int minPts) {
         this.minPts = minPts;
     }
 
-    public void setEps(double eps){
+    public void setEps(double eps) {
         this.eps = eps;
     }
 
     // Parse the dataset file (.csv)
     public void readCSV() throws FileNotFoundException {
         try {
-            this.file = new File(this.fileName);    
+            this.file = new File(this.fileName);
             Scanner scanner = new Scanner(this.file);
 
             while (scanner.hasNextLine()) {
@@ -165,11 +162,11 @@ class DBSCAN{
         }
     }
 
-    public void printConfig(){
+    public void printConfig() {
         System.out.println("Number of clusters : " + (this.clusterId - 1));
 
         int cntNoise = 0;
-        for (Point point : this.points){
+        for (Point point : this.points) {
             if (point.predictedLabel == -1) cntNoise++;
         }
         System.out.println("Number of noise : " + cntNoise);
@@ -197,7 +194,7 @@ class DBSCAN{
         w1.close();
     }
 
-    public int evalMinPts(){
+    public int evalMinPts() {
         // Set default estimatedEps
         int estimatedEps = 0;
 
@@ -207,10 +204,10 @@ class DBSCAN{
             List<Point> halfNeighbor = halfRegionQuery(point);
             if (halfNeighbor.size() > 1) newMap.put(halfNeighbor.size(), newMap.getOrDefault(halfNeighbor.size(), 0) + 1);
         }
-        
+
         // Calculate Total sum
         int sum = 0;
-        for (int key: newMap.keySet()){
+        for (int key : newMap.keySet()) {
             if (key == 1) continue;
             sum += newMap.get(key);
         }
@@ -221,10 +218,10 @@ class DBSCAN{
         // Get estimatedEps from median by comparing partialSum > median (partialSum is initialized with 0)
         // estimatedEps = key - 1 (due to neighbor points have point itself.)
         int partialSum = 0;
-        for (int key: newMap.keySet()){
+        for (int key : newMap.keySet()) {
             if (key == 1) continue;
             partialSum += newMap.get(key);
-            if (partialSum > median){
+            if (partialSum > median) {
                 estimatedEps = key - 1;
                 break;
             }
@@ -233,11 +230,11 @@ class DBSCAN{
         return estimatedEps;
     }
 
-    public void scan(){
+    public void scan() {
         for (Point point : this.points) {
             if (!point.classified) {
                 point.classified = true;
-                if (expandCluster(point)){
+                if (expandCluster(point)) {
                     clusterId++;
                 }
             }
@@ -264,40 +261,33 @@ class DBSCAN{
         return neighbors;
     }
 
-    private boolean expandCluster(Point point){
+    private boolean expandCluster(Point point) {
         List<Point> seeds = regionQuery(point);
 
         if (seeds.size() < this.minPts) {
             point.predictedLabel = -1;  // -1 for noise
             return false;
-        }
-        else {
+        } else {
             List<Point> cluster = new ArrayList<>();
             point.classified = true;
             point.predictedLabel = this.clusterId;
             cluster.add(point);
 
-            while(!seeds.isEmpty()){
+            while (!seeds.isEmpty()) {
                 Point nowPoint = seeds.get(0);
-                List<Point> result = regionQuery(nowPoint);
-                if (result.size() >= this.minPts) {
-                    for(Point nxtPoint : result){
-                        // Unclassified
-                        if (!nxtPoint.classified){
-                            seeds.add(nxtPoint);
-                            nxtPoint.classified = true;
-                            nxtPoint.predictedLabel = this.clusterId;
-                            cluster.add(nxtPoint);
-                        }
-                        // Noise
-                        else if(nxtPoint.predictedLabel == -1){
-                            nxtPoint.predictedLabel = this.clusterId;
-                            cluster.add(nxtPoint);
-                        }
+                List<Point> newNeighbors = regionQuery(nowPoint);
 
+                if (newNeighbors.size() >= this.minPts) {
+                    for (Point newNeighbor : newNeighbors) {
+                        if (!newNeighbor.classified) {
+                            seeds.add(newNeighbor);
+                            newNeighbor.classified = true;
+                            newNeighbor.predictedLabel = this.clusterId;
+                        }
                     }
                 }
-                seeds.remove(nowPoint);
+                seeds.remove(0);
+                cluster.add(nowPoint);
             }
             clusters.add(cluster);
             return true;
@@ -305,33 +295,86 @@ class DBSCAN{
     }
 
     private double calcDistance(Point p1, Point p2) {
-        switch (this.distanceMetric) {
-            case "Euclidean":
-                return euclideanDistance(p1, p2);
-            case "Manhatten":
-                return manhattenDistance(p1, p2);
-            case "Chebyshev":
-                return chebyshevDistance(p1, p2);
-            case "Minkowski":
-                return minkowskiDistance(p1, p2, 3);
-            default:
-                throw new IllegalArgumentException("Illegal distanceMetric: " + this.distanceMetric);
+        if (this.distanceMetric.equals("Euclidean")) {
+            return calcEuclideanDistance(p1, p2);
+        } else if (this.distanceMetric.equals("Manhatten")) {
+            return calcManhattenDistance(p1, p2);
+        } else if (this.distanceMetric.equals("Chebyshev")) {
+            return calcChebyshevDistance(p1, p2);
+        } else if (this.distanceMetric.equals("Minkowski")) {
+            return calcMinkowskiDistance(p1, p2, 3.0);
         }
+        return -1.0;
     }
 
-    private double euclideanDistance(Point p1, Point p2) {
-        return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+    private double calcEuclideanDistance(Point p1, Point p2) {
+        return Math.sqrt(Math.pow((p1.x - p2.x), 2) + Math.pow((p1.y - p2.y), 2));
     }
 
-    private double manhattenDistance(Point p1, Point p2) {
+    private double calcManhattenDistance(Point p1, Point p2) {
         return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y);
     }
 
-    private double chebyshevDistance(Point p1, Point p2) {
+    private double calcChebyshevDistance(Point p1, Point p2) {
         return Math.max(Math.abs(p1.x - p2.x), Math.abs(p1.y - p2.y));
     }
 
-    private double minkowskiDistance(Point p1, Point p2, int p) {
-        return Math.pow(Math.pow(Math.abs(p1.x - p2.x), p) + Math.pow(Math.abs(p1.y - p2.y), p), 1.0 / p);
+    private double calcMinkowskiDistance(Point p1, Point p2, double p) {
+        return Math.pow(Math.pow(Math.abs(p1.x - p2.x), p) + Math.pow(Math.abs(p1.y - p2.y), p), 1/p);
     }
+
+    // Estimating optimal eps using k-distance graph heuristic method
+    public double estimateEps() {
+        List<Double> kDistances = new ArrayList<>();
+        for (Point p1 : points) {
+            List<Double> distances = new ArrayList<>();
+            for (Point p2 : points) {
+                if (!p1.equals(p2)) {
+                    distances.add(calcDistance(p1, p2));
+                }
+            }
+            Collections.sort(distances);
+            kDistances.add(distances.get(minPts-1));
+//            double kDistSum = 0.0;
+//            for (int i = 0; i < minPts; i++) {
+//                kDistSum += distances.get(i);
+//            }
+//            kDistances.add(kDistSum / minPts);
+        }
+
+        Collections.sort(kDistances);
+        return findKneePoint(kDistances);
+    }
+
+    private double findKneePoint(List<Double> sortedDistances) {
+        int nPoints = sortedDistances.size();
+        double maxDistance = 0.0;
+        int kneePoint = 0;
+
+        for (int i = 0; i < nPoints; i++) {
+            double distance = perpendicularDistance(sortedDistances, i);
+            if (distance > maxDistance) {
+                maxDistance = distance;
+                kneePoint = i;
+            }
+        }
+
+        return sortedDistances.get(kneePoint);
+    }
+
+    private double perpendicularDistance(List<Double> sortedDistances, int i) {
+        double x1 = 0;
+        double y1 = sortedDistances.get(0);
+        double x2 = sortedDistances.size() - 1;
+        double y2 = sortedDistances.get(sortedDistances.size() - 1);
+
+        double x0 = i;
+        double y0 = sortedDistances.get(i);
+
+        double numerator = Math.abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1);
+        double denominator = Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
+
+        return numerator / denominator;
+    }
+
 }
