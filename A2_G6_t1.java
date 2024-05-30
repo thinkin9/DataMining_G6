@@ -6,13 +6,14 @@ import java.util.*;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 
+//class representing one data point
 class Point {
-    private String name;
+    private String name; // point name
     private Double x;
     private Double y;
-    private Integer cluster_number;
+    private Integer cluster_number; // Which cluster this point belongs to
 
-    public Point(String name, Double x, Double y, Integer c) {
+    public Point(String name, Double x, Double y, Integer c) { // initialize class
         this.name = name;
         this.x = x;
         this.y = y;
@@ -47,17 +48,18 @@ class Point {
         this.cluster_number = C;
     }
 
-    public Double Distance(Point a) {
+    public Double Distance(Point a) { // calculate distance between this point and other point
         return Math.sqrt((a.x - this.x) * (a.x - this.x) + (a.y - this.y) * (a.y - this.y));
     }
 }
 
+// class representing one cluster with data points and centroid
 class Cluster {
-    private Integer num;
-    private Set<Point> points;
-    private Point centroid;
+    private Integer num; // numbering
+    private Set<Point> points; // points belong to this cluster
+    private Point centroid; // centroid
 
-    public Cluster(Integer num, Point centroid) {
+    public Cluster(Integer num, Point centroid) { // initialize class
         this.num = num;
         this.points = new HashSet<>();
         this.centroid = centroid;
@@ -67,11 +69,7 @@ class Cluster {
         this.points.add(P);
     }
 
-    public void removePoint(Point P) {
-        this.points.remove(P);
-    }
-
-    public void clearPoints() {
+    public void clearPoints() { // remove all points in Cluster but centroid information is not changed
         this.points.clear();
     }
 
@@ -91,40 +89,42 @@ class Cluster {
         return this.points.size();
     }
 
-    public void Update_centroid() {
+    public void Update_centroid() { // recalculate the centroid of this cluster
         Integer size = this.points.size();
-        if (size == 0)
+        if (size == 0) // avoid dividing to 0
             return;
         Double new_x = 0.0d;
         Double new_y = 0.0d;
-        for (Point p : this.points) {
+        for (Point p : this.points) { // calculate the new centroid position
             new_x += (p.getX() / size);
             new_y += (p.getY() / size);
         }
-        this.centroid = new Point(this.centroid.getName(), new_x, new_y, this.centroid.getC());
+        this.centroid = new Point(this.centroid.getName(), new_x, new_y, this.centroid.getC()); // update centroid
     }
 
-    public Double Inner_Avg_distance(Point p, Cluster currentCluster) {
-        if (currentCluster.getSize() <= 1)
+    public Double Inner_Avg_distance(Point p, Cluster currentCluster) { // calculate a(i) for silhouette index
+        if (currentCluster.getSize() <= 1) // special case: size is 0 or 1
             return 0.0d;
         Double distance = 0.0d;
-        for (Point c : currentCluster.getPoints()) {
+        for (Point c : currentCluster.getPoints()) { // sum distance between p and all points in current cluster
             distance += p.Distance(c);
         }
-        distance = (Double) (distance / (currentCluster.getSize() - 1));
+        distance = (Double) (distance / (currentCluster.getSize() - 1)); // divide to size-1
         return distance;
     }
 
-    public Double Outter_Avg_distance(Point p, List<Cluster> clusters) {
+    public Double Outter_Avg_distance(Point p, List<Cluster> clusters) { // calculate b(i) for silhouette index
         Double minDistance = Double.MAX_VALUE;
         for (Cluster c : clusters) {
-            if (!c.equals(this)) {
+            if (c.getSize() == 0) // special case: size is 0
+                continue;
+            if (!c.equals(this)) { // check if c is not itself
                 Double distance = 0.0d;
-                for (Point point : c.getPoints()) {
+                for (Point point : c.getPoints()) { // sum distance between p and all points in cluster c
                     distance += p.Distance(point);
                 }
                 distance /= c.getPoints().size();
-                if (distance < minDistance) {
+                if (distance < minDistance) { // find cluster with minimum avg distance
                     minDistance = distance;
                 }
             }
@@ -139,7 +139,7 @@ public class A2_G6_t1 {
 
         // Argument Parsing: java A2_G2_t1 ./database/artd-31.csv 15
         Integer Pts = -1;
-        Integer mode;
+        Integer mode; // mode = 0: k specified, mode = 1: k not specified.
         if (args.length == 2) {
             Pts = Integer.parseInt(args[1]);
             mode = 0;
@@ -147,12 +147,12 @@ public class A2_G6_t1 {
             mode = 1;
         }
 
-        long startTime = System.currentTimeMillis();
+        long startTime = System.currentTimeMillis(); // check execution time
 
         BufferedReader br = new BufferedReader(new FileReader(args[0]));
         String line;
         List<Point> data = new ArrayList<>();
-        while ((line = br.readLine()) != null) {
+        while ((line = br.readLine()) != null) { // read data and store into List of Points
             String[] str = line.split(",");
             Double x = Double.parseDouble(str[1]);
             Double y = Double.parseDouble(str[2]);
@@ -160,62 +160,70 @@ public class A2_G6_t1 {
         }
         br.close();
 
-        Integer t = 15; // how much update_cluster is executed per run
-        Integer repeat = 10; // run amount
-        Double silhouetteIndex = -1.0d;
+        Integer t = 10000; // maximum number of loop repetition per run
+        Integer repeat = 1; // run amount per k value
+        Double silhouetteIndex = -1.0d; // initial setting, if there is better value for some run, it will be updated.
 
-        String outputFilename = "kmeans_results.csv";
+        String outputFilename = "kmeans_results.csv"; // for visualizing purpose
 
         List<Cluster> Result = new ArrayList<>();
 
         if (mode == 0) {
-            A2_G6_t1 run = new A2_G6_t1(Pts, data);
-            silhouetteIndex = run.run_and_return_silhouette(t);
-            Result = run.getClusters();
+            for (int j = 0; j < repeat; j++) { // repeat repeat times
+                A2_G6_t1 run = new A2_G6_t1(Pts, data); // initialize
+                Double tmp = run.run_and_return_silhouette(t);
+                if (silhouetteIndex < tmp) { // if this run has better silhouette index
+                    silhouetteIndex = tmp;
+                    Result.clear();
+                    Result = run.getClusters(); // update result
+                    run.save_CSV(outputFilename, Result); // save clustering result into csv file
+                }
+            }
         } else if (mode == 1) {
-            Integer[] test = { 2, 4, 8, 16, 32, 64 };
+            Integer[] test = { 2, 4, 8, 16, 32, 64 }; // k values to test
             for (int i = 0; i < test.length; i++) {
                 Integer nowPts = test[i];
-                for (int j = 0; j < repeat; j++) {
+                for (int j = 0; j < repeat; j++) { // repeat repeat times for each k
                     A2_G6_t1 run = new A2_G6_t1(nowPts, data);
                     Double tmp = run.run_and_return_silhouette(t);
-                    if (silhouetteIndex < tmp) {
+                    if (silhouetteIndex < tmp) { // if this run has better silhouette index
                         silhouetteIndex = tmp;
-                        Pts = nowPts;
+                        Pts = nowPts; // update k with best result
                         Result.clear();
-                        Result = run.getClusters();
-                        run.save_CSV(outputFilename, Result);
+                        Result = run.getClusters(); // update clustering result
+                        run.save_CSV(outputFilename, Result); // save clustering result into csv file
                     }
                 }
             }
-            Integer Pts1 = Pts;
-            for (int nowPts = Pts1 / 2 + 1; nowPts < Pts1 * 3 / 2 - 1; nowPts++) {
+            Integer Pts1 = Pts; // selected k
+            for (int nowPts = Pts1 / 2 + 1; nowPts < Pts1 * 2 - 1; nowPts++) { // repeat from k=k/2+1 to 2k-1
                 for (int j = 0; j < repeat; j++) {
                     A2_G6_t1 run = new A2_G6_t1(nowPts, data);
                     Double tmp = run.run_and_return_silhouette(t);
-                    if (silhouetteIndex < tmp) {
+                    if (silhouetteIndex < tmp) { // if this run has better silhouette index
                         silhouetteIndex = tmp;
-                        Pts = nowPts;
+                        Pts = nowPts; // update k with best result
                         Result.clear();
-                        Result = run.getClusters();
-                        run.save_CSV(outputFilename, Result);
+                        Result = run.getClusters(); // update clustering result
+                        run.save_CSV(outputFilename, Result); // save clustering result into csv file
                     }
                 }
             }
         }
-        long endTime = System.currentTimeMillis();
+        long endTime = System.currentTimeMillis(); // check execution time
         System.out.println("A2_G6_t1 Processing Execution time: " + (endTime - startTime) / 1000.0);
-        // System.out.println("Silhouette Index: " + silhouetteIndex);
+        // System.out.println("Silhouette Index: " + silhouetteIndex); //debugging
+        // purposes
         if (mode == 0) {
-        } else if (mode == 1) {
+        } else if (mode == 1) { // estimated k
             System.out.println("estimated k: " + Pts);
         }
-        for (Cluster c : Result) {
+        for (Cluster c : Result) { // print clustering result
             List<Point> pts = new ArrayList<>();
             for (Point pt : c.getPoints()) {
                 pts.add(pt);
             }
-            pts.sort((pt1, pt2) -> {
+            pts.sort((pt1, pt2) -> { // sort with point number to print
                 int num1 = Integer.parseInt(pt1.getName().substring(1));
                 int num2 = Integer.parseInt(pt2.getName().substring(1));
                 return Integer.compare(num1, num2);
@@ -228,58 +236,51 @@ public class A2_G6_t1 {
         }
     }
 
-    private Integer pts;
-    private List<Point> points;
-    private List<Cluster> clusters;
+    private Integer pts; // k
+    private List<Point> points; // all data points
+    private List<Cluster> clusters; // clusters
 
-    public List<Cluster> getClusters() {
+    public List<Cluster> getClusters() { // for printing purpose
         return this.clusters;
     }
 
-    public A2_G6_t1(Integer Pts, List<Point> data) {
+    public A2_G6_t1(Integer Pts, List<Point> data) { // initialize centroids: k-means++
         this.pts = Pts;
         this.points = data;
         this.clusters = new ArrayList<>(Pts);
         Random random = new Random();
-        Integer c = random.nextInt(this.points.size());
-        Point nowc = this.points.get(c);
-        this.clusters.add(new Cluster(0, nowc));
+        Integer c = random.nextInt(this.points.size()); // select initial point number
+        Point nowc = this.points.get(c); // get point information
+        this.clusters.add(new Cluster(0, nowc)); // add to first cluster's centroid.
 
         // Double dist;
         for (int i = 1; i < Pts; i++) {
-            Double totalDistance = 0.0d;
-            List<Double> distances = new ArrayList<>(this.points.size());
-            for (int j = 0; j < this.points.size(); j++) {
+            Double totalDistance = 0.0d; // sum of distances
+            List<Double> distances = new ArrayList<>(this.points.size()); // array that save distances for each point
+            for (int j = 0; j < this.points.size(); j++) { // for each point
                 Double dist = Double.MAX_VALUE;
-                for (Cluster cluster : this.clusters) {
+                for (Cluster cluster : this.clusters) { // find closest centroid (minimum distance) for each point
                     Double tmp = this.points.get(j).Distance(cluster.getCentroid());
                     dist = Double.min(dist, tmp);
                 }
-                distances.add(j, dist * dist);
-                totalDistance += (dist * dist);
+                distances.add(j, dist * dist); // add square of distance to array
+                totalDistance += (dist * dist); // and totalDistance.
             }
-            double r = random.nextDouble() * totalDistance;
-            double currDist = 0.0;
-            for (int j = 0; j < this.points.size(); j++) {
-                currDist += distances.get(j);
-                boolean flag = true;
-                for (Cluster k : this.clusters) {
-                    if (k.getCentroid().getX() == this.points.get(j).getX() && k.getCentroid().getY() == this.points
-                            .get(j).getY()) {
-                        flag = false;
-                    }
-                }
-                if (flag && currDist >= r) {
+            double r = random.nextDouble() * totalDistance; // randomly choose value between 0 and totalDistance
+            double currDist = 0.0; // current sum
+            for (int j = 0; j < this.points.size(); j++) { // this part chooses next centroid.
+                currDist += distances.get(j); // restore info
+                if (currDist >= r) { // choose centroids with probability proportional to square of the distances
                     c = j;
-                    nowc = this.points.get(c);
-                    this.clusters.add(new Cluster(i, nowc));
+                    nowc = this.points.get(c); // get point information
+                    this.clusters.add(new Cluster(i, nowc)); // add to i-1th cluster's centroid.
                     break;
                 }
             }
         }
     }
     /*
-     * public void pirnt_cluster() {
+     * public void print_cluster() {
      * for(Cluster c : clusters) {
      * String s = "cluster: ";
      * for(Point p : c.getPoints()) {
@@ -290,7 +291,7 @@ public class A2_G6_t1 {
      * }
      */
 
-    public void Update_clusters() {
+    public void Update_clusters() { // inside the loop.. one step.
         for (Cluster cluster : this.clusters) {
             cluster.clearPoints();
         }
@@ -302,19 +303,22 @@ public class A2_G6_t1 {
         }
     }
 
-    public Double run_and_return_silhouette(Integer t) {
+    public Double run_and_return_silhouette(Integer t) { // run k-means++. t is the maximum number of loop repetition.
         for (int i = 0; i < t; i++) {
-            List<Point> old_clusters = new ArrayList<>(this.pts);
-            List<Point> new_clusters = new ArrayList<>(this.pts);
+            Set<Double> old_clusters_x = new HashSet<>(this.pts);// for checking convergence. (check centroids)
+            Set<Double> old_clusters_y = new HashSet<>(this.pts);
+            Set<Double> new_clusters_x = new HashSet<>(this.pts);
+            Set<Double> new_clusters_y = new HashSet<>(this.pts);
             for (int j = 0; j < this.pts; j++) {
-                old_clusters.add(j, this.clusters.get(j).getCentroid());
+                old_clusters_x.add(this.clusters.get(j).getCentroid().getX());
+                old_clusters_y.add(this.clusters.get(j).getCentroid().getY());
             }
             Update_clusters();
             for (int j = 0; j < this.pts; j++) {
-                old_clusters.add(j, this.clusters.get(j).getCentroid());
+                new_clusters_x.add(this.clusters.get(j).getCentroid().getX());
+                new_clusters_y.add(this.clusters.get(j).getCentroid().getY());
             }
-            if (old_clusters == new_clusters) {
-                System.out.println(i);
+            if (old_clusters_x.equals(new_clusters_x) && old_clusters_y.equals(new_clusters_y)) { // check convergence
                 break;
             }
         }
