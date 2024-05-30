@@ -48,6 +48,7 @@ public class A2_G6_t2 {
         DBSCAN dbscan = new DBSCAN(fileName, distanceMetric);
         dbscan.readCSV();
 
+
         if (checkEstimatedBoth){ // Extra works
             int estimatedMinPts = 4;  // Need to find optimal MinPts
             minPts = estimatedMinPts;
@@ -88,14 +89,23 @@ public class A2_G6_t2 {
         System.out.println("A2_G6_t2 Processing Execution time: " + (endTime - startTime)/1000.0);
 
         if (storeResult) {
-            String resultFileName = "./A2_G6_t2_analysis/" + "e" + String.valueOf(eps).substring(2) + "m" + String.valueOf(minPts) + "Result.txt";
-
+            String resultFileName = "./A2_G6_t2_analysis/clustering_result.csv";
             try {
                 dbscan.storeResults(resultFileName);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
+
+//        if (storeResult) {
+//            String resultFileName = "./A2_G6_t2_analysis/" + "e" + String.valueOf(eps).substring(2) + "m" + String.valueOf(minPts) + "Result.txt";
+//
+//            try {
+//                dbscan.storeResults(resultFileName);
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
     }
 }
 
@@ -189,7 +199,8 @@ class DBSCAN {
         FileWriter w1 = new FileWriter(resultFileName);
 
         for (Point point : points) {
-            w1.write(point.id + "," + point.x + "," + point.y + "," + point.groundTruthLabel + "," + point.predictedLabel + "\n");
+           // w1.write(point.id + "," + point.x + "," + point.y + "," + point.groundTruthLabel + "," + point.predictedLabel + "\n");
+            w1.write(point.id + "," + point.x + "," + point.y + "," + point.predictedLabel + "\n");
         }
         w1.close();
     }
@@ -261,33 +272,40 @@ class DBSCAN {
         return neighbors;
     }
 
-    private boolean expandCluster(Point point) {
+    private boolean expandCluster(Point point){
         List<Point> seeds = regionQuery(point);
 
         if (seeds.size() < this.minPts) {
             point.predictedLabel = -1;  // -1 for noise
             return false;
-        } else {
+        }
+        else {
             List<Point> cluster = new ArrayList<>();
             point.classified = true;
             point.predictedLabel = this.clusterId;
             cluster.add(point);
 
-            while (!seeds.isEmpty()) {
+            while(!seeds.isEmpty()){
                 Point nowPoint = seeds.get(0);
-                List<Point> newNeighbors = regionQuery(nowPoint);
-
-                if (newNeighbors.size() >= this.minPts) {
-                    for (Point newNeighbor : newNeighbors) {
-                        if (!newNeighbor.classified) {
-                            seeds.add(newNeighbor);
-                            newNeighbor.classified = true;
-                            newNeighbor.predictedLabel = this.clusterId;
+                List<Point> result = regionQuery(nowPoint);
+                if (result.size() >= this.minPts) {
+                    for(Point nxtPoint : result){
+                        // Unclassified
+                        if (!nxtPoint.classified){
+                            seeds.add(nxtPoint);
+                            nxtPoint.classified = true;
+                            nxtPoint.predictedLabel = this.clusterId;
+                            cluster.add(nxtPoint);
                         }
+                        // Noise
+                        else if(nxtPoint.predictedLabel == -1){
+                            nxtPoint.predictedLabel = this.clusterId;
+                            cluster.add(nxtPoint);
+                        }
+
                     }
                 }
-                seeds.remove(0);
-                cluster.add(nowPoint);
+                seeds.remove(nowPoint);
             }
             clusters.add(cluster);
             return true;
@@ -343,21 +361,35 @@ class DBSCAN {
         }
 
         Collections.sort(kDistances);
+        saveKDistances(kDistances, "./A2_G6_t2_analysis/k_distances.csv");
         return findKneePoint(kDistances);
+    }
+
+    public void saveKDistances(List<Double> kDistances, String filename) {
+        try (FileWriter writer = new FileWriter(filename)) {
+            for (Double dist : kDistances) {
+                writer.write(dist + "\n");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private double findKneePoint(List<Double> sortedDistances) {
         int nPoints = sortedDistances.size();
         double maxDistance = 0.0;
         int kneePoint = 0;
+        List<Double> perpendicularDistances = new ArrayList<>();
 
         for (int i = 0; i < nPoints; i++) {
             double distance = perpendicularDistance(sortedDistances, i);
+            perpendicularDistances.add(distance);
             if (distance > maxDistance) {
                 maxDistance = distance;
                 kneePoint = i;
             }
         }
+        saveKDistances(perpendicularDistances, "./A2_G6_t2_analysis/pdistances.csv");
 
         return sortedDistances.get(kneePoint);
     }
