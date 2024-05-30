@@ -14,11 +14,15 @@ public class A2_G6_t2 {
         boolean storeResult = true;
 
         int argc = args.length;
+        boolean checkEstimatedBoth = false;
         boolean checkEstimatedMinPts = false;
         boolean checkEstimatedEps = false;
 
-
-        if (argc == 2){
+        if (argc == 1){
+            fileName = args[0];
+            checkEstimatedBoth = true;
+        }
+        else if (argc == 2){
             fileName = args[0];
             if (args[1].contains(".")){
                 checkEstimatedMinPts = true;
@@ -41,28 +45,40 @@ public class A2_G6_t2 {
         String[] distanceMetrics = {"Euclidean", "Manhatten", "Chebyshev", "Minkowski"};
         String distanceMetric = distanceMetrics[0]; // Set Distance Metric
 
-        if (checkEstimatedMinPts){
+        DBSCAN dbscan = new DBSCAN(fileName, distanceMetric);
+        dbscan.readCSV();
+
+        if (checkEstimatedBoth){ // Extra works
             int estimatedMinPts = 4;  // Need to find optimal MinPts
             minPts = estimatedMinPts;
             System.out.println("Estimated MinPts: " + minPts);
+
+            double estimatedEps = 0.5; // Need to find optimal Eps
+            eps = estimatedEps;
+            System.out.println("Estimated eps: " + eps);
+        }
+        else if (checkEstimatedMinPts){
+            dbscan.setEps(eps);
+
+            // Finding optimal minPts
+            int estimatedMinPts = dbscan.evalMinPts();  // Need to find optimal MinPts
+            minPts = estimatedMinPts;
+            dbscan.setMinPts(minPts);
+            System.out.println("Estimated MinPts: " + minPts);
+
         }
         else if (checkEstimatedEps){
-//            double estimatedEps = 0.5; // Need to find optimal Eps
-//            eps = estimatedEps;
-//            System.out.println("Estimated eps: " + eps);
+            dbscan.setMinPts(minPts);
 
-            DBSCAN dbscan = new DBSCAN(fileName, minPts, eps, distanceMetric);
-            dbscan.readCSV();
-            eps = dbscan.estimateEps();
-            System.out.println("Estimated eps: " + eps);
+            double estimatedEps = 0.5; // Need to find optimal Eps
+            eps = estimatedEps;
             dbscan.setEps(eps);
-            dbscan.scan();
-            dbscan.printConfig();
-            dbscan.printClusters();
+            System.out.println("Estimated eps: " + eps);
         }
-
-        DBSCAN dbscan = new DBSCAN(fileName, minPts, eps, distanceMetric);
-        dbscan.readCSV();
+        else {
+            dbscan.setMinPts(minPts);
+            dbscan.setEps(eps);
+        }
 
         long startTime = System.currentTimeMillis();
         dbscan.scan();
@@ -74,25 +90,14 @@ public class A2_G6_t2 {
         System.out.println("A2_G6_t2 Processing Execution time: " + (endTime - startTime)/1000.0);
 
         if (storeResult) {
-            String resultFileName = "./A2_G6_t2_analysis/clustering_result.csv";
+            String resultFileName = "./A2_G6_t2_analysis/" + "e" + String.valueOf(eps).substring(2) + "m" + String.valueOf(minPts) + "Result.txt";
+
             try {
                 dbscan.storeResults(resultFileName);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
-
-
-//        if (storeResult) {
-//            String groundLabelFileName = "./A2_G6_t2_analysis/" + "e" + String.valueOf(eps).substring(2) + "m" + String.valueOf(minPts) + "groundTruth.txt";
-//            String predictedLabelFileName = "./A2_G6_t2_analysis/" + "e" + String.valueOf(eps).substring(2) + "m" + String.valueOf(minPts) + "Predicted.txt";
-//
-//            try {
-//                dbscan.storeResults(groundLabelFileName, predictedLabelFileName);
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
     }
 }
 
@@ -126,21 +131,23 @@ class DBSCAN{
     List<List<Point>> clusters = new ArrayList<>();
 
     // Constructor
-    public DBSCAN(String fileName, int minPts, double eps, String distanceMetric) {
+    public DBSCAN(String fileName, String distanceMetric) {
         this.fileName = fileName;
-        this.minPts = minPts;
-        this.eps = eps;
         this.distanceMetric = distanceMetric;
     }
 
-    public void setEps(double eps) {
+    public void setMinPts(int minPts){
+        this.minPts = minPts;
+    }
+
+    public void setEps(double eps){
         this.eps = eps;
     }
 
     // Parse the dataset file (.csv)
     public void readCSV() throws FileNotFoundException {
         try {
-            this.file = new File(this.fileName);
+            this.file = new File(this.fileName);    
             Scanner scanner = new Scanner(this.file);
 
             while (scanner.hasNextLine()) {
@@ -181,16 +188,49 @@ class DBSCAN{
         }
     }
 
-    public void storeResults(String groundLabelFileName, String predictedLabelFileName) throws IOException {
-        FileWriter w1 = new FileWriter(groundLabelFileName);
-        FileWriter w2 = new FileWriter(predictedLabelFileName);
+    public void storeResults(String resultFileName) throws IOException {
+        FileWriter w1 = new FileWriter(resultFileName);
 
         for (Point point : points) {
-            w1.write(point.groundTruthLabel + "\n");
-            w2.write(point.predictedLabel + "\n");
+            w1.write(point.id + "," + point.x + "," + point.y + "," + point.groundTruthLabel + "," + point.predictedLabel + "\n");
         }
         w1.close();
-        w2.close();
+    }
+
+    public int evalMinPts(){
+        // Set default estimatedEps
+        int estimatedEps = 0;
+
+        // Finding 0.5 Eps neighbor points
+        Map<Integer, Integer> newMap = new HashMap<>();
+        for (Point point : this.points) {
+            List<Point> halfNeighbor = halfRegionQuery(point);
+            if (halfNeighbor.size() > 1) newMap.put(halfNeighbor.size(), newMap.getOrDefault(halfNeighbor.size(), 0) + 1);
+        }
+        
+        // Calculate Total sum
+        int sum = 0;
+        for (int key: newMap.keySet()){
+            if (key == 1) continue;
+            sum += newMap.get(key);
+        }
+
+        // Get median idx
+        int median = (sum % 2 == 1) ? sum / 2 + 1 : sum / 2;
+
+        // Get estimatedEps from median by comparing partialSum > median (partialSum is initialized with 0)
+        // estimatedEps = key - 1 (due to neighbor points have point itself.)
+        int partialSum = 0;
+        for (int key: newMap.keySet()){
+            if (key == 1) continue;
+            partialSum += newMap.get(key);
+            if (partialSum > median){
+                estimatedEps = key - 1;
+                break;
+            }
+        }
+
+        return estimatedEps;
     }
 
     public void scan(){
@@ -208,6 +248,16 @@ class DBSCAN{
         List<Point> neighbors = new ArrayList<>();
         for (Point trgPoint : this.points) {
             if (calcDistance(refPoint, trgPoint) <= this.eps) {
+                neighbors.add(trgPoint);
+            }
+        }
+        return neighbors;
+    }
+
+    private List<Point> halfRegionQuery(Point refPoint) {
+        List<Point> neighbors = new ArrayList<>();
+        for (Point trgPoint : this.points) {
+            if (calcDistance(refPoint, trgPoint) <= 0.5 * this.eps) {
                 neighbors.add(trgPoint);
             }
         }
@@ -255,7 +305,7 @@ class DBSCAN{
     }
 
     private double calcDistance(Point p1, Point p2) {
-        switch (distanceMetric) {
+        switch (this.distanceMetric) {
             case "Euclidean":
                 return euclideanDistance(p1, p2);
             case "Manhatten":
@@ -265,7 +315,7 @@ class DBSCAN{
             case "Minkowski":
                 return minkowskiDistance(p1, p2, 3);
             default:
-                throw new IllegalArgumentException("Illegal distanceMetric: " + distanceMetric);
+                throw new IllegalArgumentException("Illegal distanceMetric: " + this.distanceMetric);
         }
     }
 
@@ -284,68 +334,4 @@ class DBSCAN{
     private double minkowskiDistance(Point p1, Point p2, int p) {
         return Math.pow(Math.pow(Math.abs(p1.x - p2.x), p) + Math.pow(Math.abs(p1.y - p2.y), p), 1.0 / p);
     }
-
-    public double estimateEps() {
-        List<Double> kDistances = new ArrayList<>();
-        for (Point p1 : points) {
-            List<Double> distances = new ArrayList<>();
-            for (Point p2 : points) {
-                if (!p1.equals(p2)) {
-                    distances.add(calcDistance(p1, p2));
-                }
-            }
-            Collections.sort(distances);
-            kDistances.add(distances.get(minPts-1));
-//            double kDistSum = 0.0;
-//            for (int i = 0; i < minPts; i++) {
-//                kDistSum += distances.get(i);
-//            }
-//            kDistances.add(kDistSum / minPts);
-        }
-
-        Collections.sort(kDistances);
-        return findKneePoint(kDistances);
-    }
-
-    private double findKneePoint(List<Double> sortedDistances) {
-        int nPoints = sortedDistances.size();
-        double maxDistance = 0.0;
-        int kneePoint = 0;
-
-        for (int i = 0; i < nPoints; i++) {
-            double distance = perpendicularDistance(sortedDistances, i);
-            if (distance > maxDistance) {
-                maxDistance = distance;
-                kneePoint = i;
-            }
-        }
-
-        return sortedDistances.get(kneePoint);
-    }
-
-    private double perpendicularDistance(List<Double> sortedDistances, int i) {
-        double x1 = 0;
-        double y1 = sortedDistances.get(0);
-        double x2 = sortedDistances.size() - 1;
-        double y2 = sortedDistances.get(sortedDistances.size() - 1);
-
-        double x0 = i;
-        double y0 = sortedDistances.get(i);
-
-        double numerator = Math.abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1);
-        double denominator = Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
-
-        return numerator / denominator;
-    }
-
-    public void storeResults(String resultFileName) throws IOException {
-        FileWriter writer = new FileWriter(resultFileName);
-        for (Point point : points) {
-            writer.write(point.id + "," + point.x + "," + point.y + "," + point.predictedLabel + "\n");
-        }
-        writer.close();
-    }
-
 }
-
-
