@@ -70,7 +70,7 @@ public class A2_G6_t2 {
         else if (checkEstimatedEps){
             dbscan.setMinPts(minPts);
 
-            eps = dbscan.estimateEps();
+            eps = dbscan.estimateEps_min();
             dbscan.setEps(eps);
             System.out.println("Estimated eps: " + eps);
         }
@@ -107,6 +107,7 @@ public class A2_G6_t2 {
 //            }
 //        }
     }
+
 }
 
 class Point {
@@ -342,7 +343,7 @@ class DBSCAN {
     }
 
     // Estimating optimal eps using k-distance graph heuristic method
-    public double estimateEps() {
+    public double estimateEps_min() {
         List<Double> kDistances = new ArrayList<>();
         for (Point p1 : points) {
             List<Double> distances = new ArrayList<>();
