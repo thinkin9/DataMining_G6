@@ -92,24 +92,15 @@ public class A2_G6_t2 {
         dbscan.printClusters();
         System.out.println("A2_G6_t2 Processing Execution time: " + (endTime - startTime)/1000.0);
 
-        if (storeResult) {
-            String resultFileName = "./A2_G6_t2_analysis/D1_EpsMean.csv";
-            try {
-                dbscan.storeResults(resultFileName);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
 //        if (storeResult) {
-//            String resultFileName = "./A2_G6_t2_analysis/" + "e" + String.valueOf(eps).substring(2) + "m" + String.valueOf(minPts) + "Result.txt";
-//
+//            String resultFileName = "./A2_G6_t2_analysis/D1_EpsMean.csv";
 //            try {
 //                dbscan.storeResults(resultFileName);
 //            } catch (IOException e) {
 //                throw new RuntimeException(e);
 //            }
 //        }
+
     }
 
 }
@@ -387,7 +378,6 @@ class DBSCAN {
         }
 
         Collections.sort(kDistances);
-        //saveKDistances(kDistances, "./A2_G6_t2_analysis/k_distances.csv");
 
         double median;
         int size = kDistances.size();
@@ -403,49 +393,12 @@ class DBSCAN {
         double diff2 = Math.abs(kDistances.get(0) - median);
 
         if (10* diff2 <=  diff1) {
-            //System.out.println("Yes");
             eps = median;
         }
 
         return eps;
     }
 
-
-
-
-//    public double estimateEps() {
-//        List<Double> kDistances = new ArrayList<>();
-//        for (Point p1 : points) {
-//            List<Double> distances = new ArrayList<>();
-//            for (Point p2 : points) {
-//                if (!p1.equals(p2)) {
-//                    distances.add(calcDistance(p1, p2));
-//                }
-//            }
-//            Collections.sort(distances);
-//           // kDistances.add(distances.get(minPts-1));
-//            // set the mean value of MinPts points
-//            double kDistSum = 0.0;
-//            for (int i = 0; i < minPts; i++) {
-//                kDistSum += distances.get(i);
-//            }
-//            kDistances.add(kDistSum / minPts);
-//        }
-//
-//        Collections.sort(kDistances);
-//        //saveKDistances(kDistances, "./A2_G6_t2_analysis/k_distances.csv");
-//        return findKneePoint(kDistances);
-//    }
-
-    public void saveKDistances(List<Double> kDistances, String filename) {
-        try (FileWriter writer = new FileWriter(filename)) {
-            for (Double dist : kDistances) {
-                writer.write(dist + "\n");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     private double findKneePoint(List<Double> sortedDistances) {
         int nPoints = sortedDistances.size();
@@ -461,7 +414,6 @@ class DBSCAN {
                 kneePoint = i;
             }
         }
-        //saveKDistances(perpendicularDistances, "./A2_G6_t2_analysis/pdistances.csv");
 
         return sortedDistances.get(kneePoint);
     }
