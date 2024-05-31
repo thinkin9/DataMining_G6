@@ -90,7 +90,7 @@ public class A2_G6_t2 {
 
         dbscan.printConfig();
         dbscan.printClusters();
-        System.out.println("A2_G6_t2 Processing Execution time: " + (endTime - startTime)/1000.0);
+        // System.out.println("A2_G6_t2 Processing Execution time: " + (endTime - startTime)/1000.0);
 
 //        if (storeResult) {
 //            String resultFileName = "./A2_G6_t2_analysis/D1_EpsMean.csv";
@@ -351,7 +351,7 @@ class DBSCAN {
                 }
             }
             Collections.sort(distances);
-            double first_Distance = distances.get(minPts - 1); // 기준점의 minPts번째로 가까운 점의 거리
+            double first_Distance = distances.get(minPts - 1);
             Point the_point = null;
 
             for (Point p2 : points) {
