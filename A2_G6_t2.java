@@ -93,7 +93,7 @@ public class A2_G6_t2 {
         System.out.println("A2_G6_t2 Processing Execution time: " + (endTime - startTime)/1000.0);
 
         if (storeResult) {
-            String resultFileName = "./A2_G6_t2_analysis/clustering_result.csv";
+            String resultFileName = "./A2_G6_t2_analysis/D1_EpsMean.csv";
             try {
                 dbscan.storeResults(resultFileName);
             } catch (IOException e) {
@@ -348,6 +348,8 @@ class DBSCAN {
 
     // Estimating optimal eps using k-distance graph heuristic method
 
+
+   // FINAL VERSION
     public double estimateEps() {
         List<Double> kDistances = new ArrayList<>();
         for (Point p1 : points) {
@@ -359,7 +361,7 @@ class DBSCAN {
             }
             Collections.sort(distances);
             double first_Distance = distances.get(minPts - 1); // 기준점의 minPts번째로 가까운 점의 거리
-            Point the_point =null;
+            Point the_point = null;
 
             for (Point p2 : points) {
                 if (calcDistance(p1, p2) == first_Distance) {
@@ -385,9 +387,30 @@ class DBSCAN {
         }
 
         Collections.sort(kDistances);
-        saveKDistances(kDistances, "./A2_G6_t2_analysis/k_distances.csv");
-        return findKneePoint(kDistances);
+        //saveKDistances(kDistances, "./A2_G6_t2_analysis/k_distances.csv");
+
+        double median;
+        int size = kDistances.size();
+        if (size % 2 == 0) {
+            median = (kDistances.get(size / 2 - 1) + kDistances.get(size / 2)) / 2.0;
+        } else {
+            median = kDistances.get(size / 2);
+        }
+
+        double eps = findKneePoint(kDistances);
+
+        double diff1 = Math.abs(eps - median);
+        double diff2 = Math.abs(kDistances.get(0) - median);
+
+        if (10* diff2 <=  diff1) {
+            //System.out.println("Yes");
+            eps = median;
+        }
+
+        return eps;
     }
+
+
 
 
 //    public double estimateEps() {
@@ -400,17 +423,17 @@ class DBSCAN {
 //                }
 //            }
 //            Collections.sort(distances);
-//            kDistances.add(distances.get(minPts-1));
+//           // kDistances.add(distances.get(minPts-1));
 //            // set the mean value of MinPts points
-////            double kDistSum = 0.0;
-////            for (int i = 0; i < minPts; i++) {
-////                kDistSum += distances.get(i);
-////            }
-////            kDistances.add(kDistSum / minPts);
+//            double kDistSum = 0.0;
+//            for (int i = 0; i < minPts; i++) {
+//                kDistSum += distances.get(i);
+//            }
+//            kDistances.add(kDistSum / minPts);
 //        }
 //
 //        Collections.sort(kDistances);
-//        saveKDistances(kDistances, "./A2_G6_t2_analysis/k_distances.csv");
+//        //saveKDistances(kDistances, "./A2_G6_t2_analysis/k_distances.csv");
 //        return findKneePoint(kDistances);
 //    }
 
@@ -438,7 +461,7 @@ class DBSCAN {
                 kneePoint = i;
             }
         }
-        saveKDistances(perpendicularDistances, "./A2_G6_t2_analysis/pdistances.csv");
+        //saveKDistances(perpendicularDistances, "./A2_G6_t2_analysis/pdistances.csv");
 
         return sortedDistances.get(kneePoint);
     }
