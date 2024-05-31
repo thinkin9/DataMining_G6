@@ -48,13 +48,19 @@ public class A2_G6_t2 {
         DBSCAN dbscan = new DBSCAN(fileName, distanceMetric);
         dbscan.readCSV();
 
+
         if (checkEstimatedBoth){ // Extra works
-            int estimatedMinPts = 4;  // Need to find optimal MinPts
+            int estimatedMinPts = 4;  // 2-dim
             minPts = estimatedMinPts;
-            System.out.println("Estimated MinPts: " + minPts);
+            dbscan.setMinPts(minPts);
 
             eps = dbscan.estimateEps();
+            dbscan.setEps(eps);
             System.out.println("Estimated eps: " + eps);
+
+            minPts = dbscan.evalMinPts();
+            dbscan.setMinPts(minPts);
+            System.out.println("Estimated MinPts: " + minPts);
         }
         else if (checkEstimatedMinPts){
             dbscan.setEps(eps);
@@ -84,19 +90,28 @@ public class A2_G6_t2 {
 
         dbscan.printConfig();
         dbscan.printClusters();
-
         System.out.println("A2_G6_t2 Processing Execution time: " + (endTime - startTime)/1000.0);
 
         if (storeResult) {
-            String resultFileName = "./A2_G6_t2_analysis/" + "e" + String.valueOf(eps).substring(2) + "m" + String.valueOf(minPts) + "Result.txt";
-
+            String resultFileName = "./A2_G6_t2_analysis/clustering_result.csv";
             try {
                 dbscan.storeResults(resultFileName);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
+
+//        if (storeResult) {
+//            String resultFileName = "./A2_G6_t2_analysis/" + "e" + String.valueOf(eps).substring(2) + "m" + String.valueOf(minPts) + "Result.txt";
+//
+//            try {
+//                dbscan.storeResults(resultFileName);
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
     }
+
 }
 
 class Point {
@@ -189,7 +204,8 @@ class DBSCAN {
         FileWriter w1 = new FileWriter(resultFileName);
 
         for (Point point : points) {
-            w1.write(point.id + "," + point.x + "," + point.y + "," + point.groundTruthLabel + "," + point.predictedLabel + "\n");
+           // w1.write(point.id + "," + point.x + "," + point.y + "," + point.groundTruthLabel + "," + point.predictedLabel + "\n");
+            w1.write(point.id + "," + point.x + "," + point.y + "," + point.predictedLabel + "\n");
         }
         w1.close();
     }
@@ -261,33 +277,40 @@ class DBSCAN {
         return neighbors;
     }
 
-    private boolean expandCluster(Point point) {
+    private boolean expandCluster(Point point){
         List<Point> seeds = regionQuery(point);
 
         if (seeds.size() < this.minPts) {
             point.predictedLabel = -1;  // -1 for noise
             return false;
-        } else {
+        }
+        else {
             List<Point> cluster = new ArrayList<>();
             point.classified = true;
             point.predictedLabel = this.clusterId;
             cluster.add(point);
 
-            while (!seeds.isEmpty()) {
+            while(!seeds.isEmpty()){
                 Point nowPoint = seeds.get(0);
-                List<Point> newNeighbors = regionQuery(nowPoint);
-
-                if (newNeighbors.size() >= this.minPts) {
-                    for (Point newNeighbor : newNeighbors) {
-                        if (!newNeighbor.classified) {
-                            seeds.add(newNeighbor);
-                            newNeighbor.classified = true;
-                            newNeighbor.predictedLabel = this.clusterId;
+                List<Point> result = regionQuery(nowPoint);
+                if (result.size() >= this.minPts) {
+                    for(Point nxtPoint : result){
+                        // Unclassified
+                        if (!nxtPoint.classified){
+                            seeds.add(nxtPoint);
+                            nxtPoint.classified = true;
+                            nxtPoint.predictedLabel = this.clusterId;
+                            cluster.add(nxtPoint);
                         }
+                        // Noise
+                        else if(nxtPoint.predictedLabel == -1){
+                            nxtPoint.predictedLabel = this.clusterId;
+                            cluster.add(nxtPoint);
+                        }
+
                     }
                 }
-                seeds.remove(0);
-                cluster.add(nowPoint);
+                seeds.remove(nowPoint);
             }
             clusters.add(cluster);
             return true;
@@ -324,6 +347,7 @@ class DBSCAN {
     }
 
     // Estimating optimal eps using k-distance graph heuristic method
+
     public double estimateEps() {
         List<Double> kDistances = new ArrayList<>();
         for (Point p1 : points) {
@@ -334,30 +358,87 @@ class DBSCAN {
                 }
             }
             Collections.sort(distances);
-            kDistances.add(distances.get(minPts-1));
-//            double kDistSum = 0.0;
-//            for (int i = 0; i < minPts; i++) {
-//                kDistSum += distances.get(i);
-//            }
-//            kDistances.add(kDistSum / minPts);
+            double first_Distance = distances.get(minPts - 1); // 기준점의 minPts번째로 가까운 점의 거리
+            Point the_point =null;
+
+            for (Point p2 : points) {
+                if (calcDistance(p1, p2) == first_Distance) {
+                    the_point = p2;
+                    break;
+                }
+            }
+
+            if (the_point != null) {
+                List<Double> secondDistances = new ArrayList<>();
+                for (Point p3 : points) {
+                    if (!p1.equals(p3) && !the_point.equals(p3)) {
+                        secondDistances.add(calcDistance(the_point, p3));
+                    }
+                }
+
+                Collections.sort(secondDistances);
+                double second_Distance = secondDistances.get(minPts - 1);
+
+                double kDistance = Math.max(first_Distance, second_Distance);
+                kDistances.add(kDistance);
+            }
         }
 
         Collections.sort(kDistances);
+        saveKDistances(kDistances, "./A2_G6_t2_analysis/k_distances.csv");
         return findKneePoint(kDistances);
+    }
+
+
+//    public double estimateEps() {
+//        List<Double> kDistances = new ArrayList<>();
+//        for (Point p1 : points) {
+//            List<Double> distances = new ArrayList<>();
+//            for (Point p2 : points) {
+//                if (!p1.equals(p2)) {
+//                    distances.add(calcDistance(p1, p2));
+//                }
+//            }
+//            Collections.sort(distances);
+//            kDistances.add(distances.get(minPts-1));
+//            // set the mean value of MinPts points
+////            double kDistSum = 0.0;
+////            for (int i = 0; i < minPts; i++) {
+////                kDistSum += distances.get(i);
+////            }
+////            kDistances.add(kDistSum / minPts);
+//        }
+//
+//        Collections.sort(kDistances);
+//        saveKDistances(kDistances, "./A2_G6_t2_analysis/k_distances.csv");
+//        return findKneePoint(kDistances);
+//    }
+
+    public void saveKDistances(List<Double> kDistances, String filename) {
+        try (FileWriter writer = new FileWriter(filename)) {
+            for (Double dist : kDistances) {
+                writer.write(dist + "\n");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private double findKneePoint(List<Double> sortedDistances) {
         int nPoints = sortedDistances.size();
         double maxDistance = 0.0;
         int kneePoint = 0;
+        List<Double> perpendicularDistances = new ArrayList<>();
 
         for (int i = 0; i < nPoints; i++) {
             double distance = perpendicularDistance(sortedDistances, i);
+            perpendicularDistances.add(distance);
             if (distance > maxDistance) {
                 maxDistance = distance;
                 kneePoint = i;
             }
         }
+        saveKDistances(perpendicularDistances, "./A2_G6_t2_analysis/pdistances.csv");
 
         return sortedDistances.get(kneePoint);
     }
