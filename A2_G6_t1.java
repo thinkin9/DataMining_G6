@@ -114,7 +114,7 @@ class Cluster {
     }
 
     public Double Outter_Avg_distance(Point p, List<Cluster> clusters) { // calculate b(i) for silhouette index
-        Double minDistance = Double.MAX_VALUE;
+        Double minDistance = Double.MAX_VALUE; // set to max double initially to find minimum
         for (Cluster c : clusters) {
             if (c.getSize() == 0) // special case: size is 0
                 continue;
@@ -160,8 +160,8 @@ public class A2_G6_t1 {
         }
         br.close();
 
-        Integer t = 10000; // maximum number of loop repetition per run
-        Integer repeat = 1; // run amount per k value
+        Integer t = 100; // maximum number of loop repetition per run
+        Integer repeat = 10; // run amount per k value
         Double silhouetteIndex = -1.0d; // initial setting, if there is better value for some run, it will be updated.
 
         String outputFilename = "kmeans_results.csv"; // for visualizing purpose
@@ -211,7 +211,8 @@ public class A2_G6_t1 {
             }
         }
         long endTime = System.currentTimeMillis(); // check execution time
-        System.out.println("A2_G6_t1 Processing Execution time: " + (endTime - startTime) / 1000.0);
+        // System.out.println("A2_G6_t1 Processing Execution time: " + (endTime -
+        // startTime) / 1000.0);
         // System.out.println("Silhouette Index: " + silhouetteIndex); //debugging
         // purposes
         if (mode == 0) {
@@ -258,7 +259,7 @@ public class A2_G6_t1 {
             Double totalDistance = 0.0d; // sum of distances
             List<Double> distances = new ArrayList<>(this.points.size()); // array that save distances for each point
             for (int j = 0; j < this.points.size(); j++) { // for each point
-                Double dist = Double.MAX_VALUE;
+                Double dist = Double.MAX_VALUE; // set to max double initially to find minimum
                 for (Cluster cluster : this.clusters) { // find closest centroid (minimum distance) for each point
                     Double tmp = this.points.get(j).Distance(cluster.getCentroid());
                     dist = Double.min(dist, tmp);
@@ -325,23 +326,23 @@ public class A2_G6_t1 {
         return Calculate_silhouettes();
     }
 
-    public void Find_nearest_centroid(Point p) {
-        Double distance = Double.MAX_VALUE;
+    public void Find_nearest_centroid(Point p) { // find nearest centroid for given point
+        Double distance = Double.MAX_VALUE; // set to max double initially to find minimum
         Integer cluster_num = -1;
-        for (Cluster c : this.clusters) {
+        for (Cluster c : this.clusters) { // loop for clusters
             Point cp = c.getCentroid();
             if (distance > p.Distance(cp)) {
                 distance = p.Distance(cp);
                 cluster_num = c.getNum();
             }
         }
-        p.setC(cluster_num);
+        p.setC(cluster_num); // set this point's cluster number
         // this.clusters.get(cluster_num).removePoint(p);
         this.clusters.get(cluster_num).addPoint(p);
         return;
     }
 
-    public Double Calculate_silhouettes() {
+    public Double Calculate_silhouettes() { // calculate silhouette value with each point's a(p) b(p) values
         Double silhouette = 0.0d;
         for (Point p : this.points) {
             Cluster currentCluster = this.clusters.get(p.getC());
@@ -352,7 +353,10 @@ public class A2_G6_t1 {
         return silhouette / this.points.size();
     }
 
-    public void save_CSV(String filename, List<Cluster> cs) throws IOException {
+    public void save_CSV(String filename, List<Cluster> cs) throws IOException { // save result to csv file. this file
+                                                                                 // includes name of the point, point's
+                                                                                 // coordinates, and the cluster number
+                                                                                 // sorted by this algorithm.
         BufferedWriter writer = new BufferedWriter(new FileWriter(filename));
         writer.write("name,x,y,cluster\n");
         Integer cnum = 0;
